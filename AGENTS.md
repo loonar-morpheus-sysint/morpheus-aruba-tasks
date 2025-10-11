@@ -19,18 +19,30 @@ Todos os scripts devem utilizar o arquivo `commons.sh` como base para:
 - Validação de variáveis de ambiente
 - Tratamento de erros consistente
 
-### Exemplo de Inclusão
+### Template Obrigatório de Cabeçalho
+
+**IMPORTANTE**: Todo script deve seguir este template de cabeçalho EXATAMENTE:
 
 ```bash
 #!/bin/bash
-# Script: exemplo-aruba.sh
-# Descrição: Script exemplo seguindo padrões estabelecidos
+################################################################################
+# Script: nome-do-script.sh
+# Description: Descrição breve do que o script faz
+################################################################################
+#
+# Descrição detalhada (opcional)
+# Pode conter múltiplas linhas explicando o propósito,
+# parâmetros, variáveis de ambiente, exemplos, etc.
+#
+################################################################################
 
-# Carrega biblioteca comum (deve ser a primeira linha após o shebang e comentários)
+# Carrega biblioteca comum (deve ser a primeira linha funcional)
 source "$(dirname "${BASH_SOURCE[0]}")/commons.sh"
 
 # Resto do script...
 ```
+
+**OBRIGATÓRIO**: As linhas `# Script:` e `# Description:` devem estar presentes EXATAMENTE neste formato. Os testes BATS validam este padrão.
 
 ## Convenções de Nomenclatura
 
@@ -56,11 +68,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/commons.sh"
 
 ### Logging Obrigatório em Funções
 
-Todas as funções devem implementar logging de entrada, saída e erros:
+**REGRA CRÍTICA**: TODAS as funções DEVEM ter logging de entrada e saída. Esta é uma validação obrigatória do BATS.
 
 ```bash
 minha_funcao() {
-  _log_func_enter "minha_funcao"  # Entrada da função
+  _log_func_enter "minha_funcao"  # ← OBRIGATÓRIO: Primeira linha da função
+  local param="$1"
 
   log_info "Executando operação X"  # Operações importantes
 
@@ -68,37 +81,130 @@ minha_funcao() {
 
   if aoscx "show version" > "system_info.txt"; then
     log_success "Informações coletadas em system_info.txt"
-    _log_func_exit_ok "collect_system_info"
+    _log_func_exit_ok "minha_funcao"  # ← OBRIGATÓRIO: Antes de return 0
     return 0
   else
     log_error "Falha na coleta de informações"
-    _log_func_exit_fail "collect_system_info" "1"
+    _log_func_exit_fail "minha_funcao" "1"  # ← OBRIGATÓRIO: Antes de return 1
     return 1
   fi
 }
 ```
 
+**IMPORTANTE**:
+
+- `_log_func_enter` deve ser a PRIMEIRA linha de toda função
+- `_log_func_exit_ok` deve preceder TODOS os `return 0`
+- `_log_func_exit_fail` deve preceder TODOS os `return 1` (ou outros códigos de erro)
+- O nome da função deve ser EXATAMENTE o mesmo em enter/exit
+
+## Estrutura Obrigatória de Scripts
+
+### Função main() - OBRIGATÓRIA
+
+**CRÍTICO**: Todo script executável DEVE ter uma função `main()` e proteção contra sourcing:
+
+```bash
+main() {
+  _log_func_enter "main"
+
+  # Lógica principal do script aqui
+  log_info "Iniciando processamento..."
+
+  # Seu código...
+
+  _log_func_exit_ok "main"
+  return 0
+}
+
+# Proteção: executa main() apenas se script for chamado diretamente (não sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
+```
+
+**POR QUE**: Isso permite que o script seja tanto executável quanto importável (sourced) por outros scripts.
+
+### Validação de Dependências
+
+**OBRIGATÓRIO**: Sempre valide dependências ANTES de usá-las:
+
+```bash
+check_command() {
+  _log_func_enter "check_command"
+  local cmd="$1"
+
+  if command -v "${cmd}" &> /dev/null; then
+    log_success "Command '${cmd}' is available"
+    _log_func_exit_ok "check_command"
+    return 0
+  else
+    log_error "Command '${cmd}' is not available"
+    _log_func_exit_fail "check_command" "1"
+    return 1
+  fi
+}
+
+# Uso:
+if ! check_command "python3"; then
+  log_error "python3 is required but not installed"
+  exit 1
+fi
+```
+
+**NUNCA** assuma que um comando existe. **SEMPRE** valide com `command -v`.
+
 ## Diretrizes para Agentes AI
 
 ### Quando Criar Novos Scripts
 
-1. **SEMPRE** use o template base fornecido
+1. **SEMPRE** use o template de cabeçalho EXATO (Script: / Description:)
 2. **SEMPRE** inclua `commons.sh` como primeira linha funcional
-3. **SEMPRE** implemente logging completo em todas as funções
-4. **SEMPRE** use nomenclatura com hífens para arquivos
-5. **SEMPRE** valide parâmetros e variáveis de ambiente
+3. **SEMPRE** crie função `main()` com proteção contra sourcing
+4. **SEMPRE** implemente logging `_log_func_enter` e `_log_func_exit_*` em TODAS as funções
+5. **SEMPRE** use nomenclatura com hífens para arquivos
+6. **SEMPRE** valide dependências com `command -v` antes de usar
+7. **SEMPRE** valide parâmetros e variáveis de ambiente
 
-### Checklist de Qualidade
+### Checklist de Qualidade (Validação BATS)
 
-- [ ] Script usa `commons.sh`
-- [ ] Nome do arquivo com hífens
-- [ ] Todas as funções têm `_log_func_enter` e `_log_func_exit_*`
-- [ ] Tratamento adequado de códigos de retorno
+**CRÍTICO**: Os seguintes itens são VALIDADOS AUTOMATICAMENTE pelos testes BATS:
+
+#### Estrutura do Script (OBRIGATÓRIO)
+
+- [ ] Cabeçalho contém `# Script: nome-do-script.sh` (formato exato)
+- [ ] Cabeçalho contém `# Description: ...` (formato exato)
+- [ ] Shebang correto: `#!/bin/bash` ou `#!/usr/bin/env bash`
+- [ ] Script usa `source.*commons.sh`
+- [ ] Nome do arquivo segue padrão kebab-case (`nome-com-hifens.sh`)
+- [ ] Script é executável (`chmod +x`)
+
+#### Funções (OBRIGATÓRIO)
+
+- [ ] Função `main()` existe e está implementada
+- [ ] TODAS as funções têm `_log_func_enter "nome_funcao"` como primeira linha
+- [ ] TODAS as funções têm `_log_func_exit_ok` antes de `return 0`
+- [ ] TODAS as funções têm `_log_func_exit_fail` antes de `return 1`
+- [ ] Script tem proteção: `if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then main "$@"; fi`
+
+#### Logging e Erros (OBRIGATÓRIO)
+
+- [ ] Script usa funções de log: `log_info`, `log_error`, `log_success`, `log_warning`
+- [ ] Script tem tratamento de erros: `return 1` ou `exit 1`
+- [ ] Script usa códigos de retorno adequados
+
+#### Validações (OBRIGATÓRIO)
+
+- [ ] Valida variáveis de ambiente necessárias (ex: `ARUBA_HOST`)
+- [ ] Valida dependências com `command -v` antes de usar
+- [ ] Valida parâmetros obrigatórios
+
+#### Documentação (OBRIGATÓRIO)
+
 - [ ] Comentários descritivos em seções principais
-- [ ] Validação de parâmetros obrigatórios
 - [ ] Uso consistente dos níveis de log
-- [ ] Função `main()` implementada
-- [ ] Proteção contra execução acidental quando sourced
+
+**DICA**: Execute `./run-tests.sh` para validar automaticamente todos esses itens.
 
 ## Validação de Código e Documentação
 
@@ -281,6 +387,215 @@ exit 0
 - Aplicar todas as diretrizes sem exceção
 - Priorizar legibilidade e manutenibilidade
 
+## Template Completo de Script
+
+Use este template como base para TODOS os novos scripts:
+
+```bash
+#!/bin/bash
+################################################################################
+# Script: nome-do-script.sh
+# Description: Descrição breve do que o script faz
+################################################################################
+#
+# DESCRIÇÃO DETALHADA:
+#   Explicação completa do propósito do script
+#
+# VARIÁVEIS DE AMBIENTE:
+#   VARIAVEL_NECESSARIA: Descrição da variável
+#
+# USO:
+#   ./nome-do-script.sh [opcoes]
+#
+# EXEMPLOS:
+#   ./nome-do-script.sh --parametro valor
+#
+################################################################################
+
+# Carrega biblioteca comum
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/commons.sh"
+
+################################################################################
+# Funções
+################################################################################
+
+# Função exemplo
+exemplo_funcao() {
+  _log_func_enter "exemplo_funcao"
+  local param="$1"
+
+  # Validação de parâmetro
+  if [[ -z "${param}" ]]; then
+    log_error "Parâmetro obrigatório não fornecido"
+    _log_func_exit_fail "exemplo_funcao" "1"
+    return 1
+  fi
+
+  log_info "Processando: ${param}"
+
+  # Sua lógica aqui
+  if comando_qualquer "${param}"; then
+    log_success "Operação bem-sucedida"
+    _log_func_exit_ok "exemplo_funcao"
+    return 0
+  else
+    log_error "Operação falhou"
+    _log_func_exit_fail "exemplo_funcao" "1"
+    return 1
+  fi
+}
+
+# Validar dependências
+check_dependencies() {
+  _log_func_enter "check_dependencies"
+  local deps=("python3" "pip3" "git")
+
+  for cmd in "${deps[@]}"; do
+    if ! command -v "${cmd}" &> /dev/null; then
+      log_error "Dependência não encontrada: ${cmd}"
+      _log_func_exit_fail "check_dependencies" "1"
+      return 1
+    fi
+    log_info "Dependência OK: ${cmd}"
+  done
+
+  _log_func_exit_ok "check_dependencies"
+  return 0
+}
+
+################################################################################
+# Função Main
+################################################################################
+
+main() {
+  _log_func_enter "main"
+
+  log_section "NOME DO SCRIPT"
+  log_info "Iniciando processamento..."
+
+  # Validar dependências
+  if ! check_dependencies; then
+    log_error "Falha na validação de dependências"
+    _log_func_exit_fail "main" "1"
+    exit 1
+  fi
+
+  # Validar variáveis de ambiente
+  if [[ -z "${VARIAVEL_NECESSARIA:-}" ]]; then
+    log_error "VARIAVEL_NECESSARIA não definida"
+    _log_func_exit_fail "main" "1"
+    exit 1
+  fi
+
+  # Processar argumentos
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --help|-h)
+        show_usage
+        _log_func_exit_ok "main"
+        exit 0
+        ;;
+      --parametro)
+        PARAMETRO="$2"
+        shift 2
+        ;;
+      *)
+        log_error "Parâmetro desconhecido: $1"
+        show_usage
+        _log_func_exit_fail "main" "1"
+        exit 1
+        ;;
+    esac
+  done
+
+  # Executar lógica principal
+  if exemplo_funcao "${PARAMETRO}"; then
+    log_success "Script concluído com sucesso"
+    _log_func_exit_ok "main"
+    exit 0
+  else
+    log_error "Script falhou"
+    _log_func_exit_fail "main" "1"
+    exit 1
+  fi
+}
+
+# Executar main apenas se script for chamado diretamente
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
+```
+
+## Erros Comuns a Evitar
+
+### ❌ NÃO FAÇA
+
+```bash
+# ❌ Cabeçalho sem formato padrão
+# nome_script.sh - Descrição
+
+# ❌ Função sem logging
+funcao() {
+  echo "fazendo algo"
+  return 0
+}
+
+# ❌ Código solto (sem main)
+echo "Iniciando..."
+fazer_algo
+exit 0
+
+# ❌ Usar comando sem validar
+pip3 install pacote  # E se pip3 não existir?
+
+# ❌ Exit/Return sem logging
+if erro; then
+  return 1  # Falta _log_func_exit_fail
+fi
+```
+
+### ✅ FAÇA
+
+```bash
+# ✅ Cabeçalho padronizado
+# Script: nome-script.sh
+# Description: O que o script faz
+
+# ✅ Função com logging completo
+funcao() {
+  _log_func_enter "funcao"
+  log_info "Fazendo algo"
+  _log_func_exit_ok "funcao"
+  return 0
+}
+
+# ✅ Código em main()
+main() {
+  _log_func_enter "main"
+  log_info "Iniciando..."
+  fazer_algo
+  _log_func_exit_ok "main"
+  exit 0
+}
+
+# ✅ Validar antes de usar
+if ! command -v pip3 &> /dev/null; then
+  log_error "pip3 não encontrado"
+  exit 1
+fi
+pip3 install pacote
+
+# ✅ Exit/Return com logging
+if erro; then
+  _log_func_exit_fail "funcao" "1"
+  return 1
+fi
+```
+
 ---
 
 **Nota**: Este documento deve ser atualizado conforme novos padrões são estabelecidos no projeto. Mantenha sempre a versão mais recente como referência.
+
+**Última Atualização**: Adicionados templates e checklist detalhado baseado em correções identificadas pelos testes BATS (outubro 2025).
