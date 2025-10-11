@@ -1,5 +1,8 @@
 # morpheus-aruba-tasks
 
+> **⚠️ WIP - Work in Progress**  
+> Este projeto está em desenvolvimento ativo. Funcionalidades e documentação podem sofrer alterações.
+
 ![LoonarBR cover](./_assets/loonarbr_cover.jpeg)
 
 ## Descrição
