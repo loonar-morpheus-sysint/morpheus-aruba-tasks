@@ -1,0 +1,98 @@
+name: Code Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    name: Validate Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Install detect-secrets
+        run: pip install detect-secrets
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Cache pre-commit hooks
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-
+
+      - name: Run shellcheck
+        run: |
+          echo "🔍 Validando scripts Shell..."
+          find . -name "*.sh" -type f -exec shellcheck -x --severity=warning {} +
+
+      - name: Run markdownlint
+        run: |
+          echo "📝 Validando arquivos Markdown..."
+          markdownlint '**/*.md' --config .markdownlint.json
+
+      - name: Run yamllint
+        run: |
+          echo "📄 Validando arquivos YAML..."
+          yamllint -d '{extends: default, rules: {line-length: {max: 120}}}' .
+
+      - name: Validate JSON files
+        run: |
+          echo "🔧 Validando arquivos JSON..."
+          find . -name "*.json" -type f -exec sh -c 'echo "Checking {}"; jq empty {} || exit 1' \;
+
+      - name: Run detect-secrets
+        run: |
+          echo "🔐 Verificando segredos e informações sensíveis..."
+          detect-secrets scan --baseline .secrets.baseline
+
+      - name: Run pre-commit on all files
+        run: |
+          echo "✅ Executando todas as validações do pre-commit..."
+          pre-commit run --all-files
+
+        - name: Validate latest commit message (semantic)
+          run: |
+            echo "🔎 Validando mensagem do último commit (conventional commits)..."
+            COMMIT_MSG_FILE=$(mktemp)
+            git log -1 --pretty=%B > "$COMMIT_MSG_FILE"
+            pre-commit run conventional-pre-commit --hook-stage commit-msg --commit-msg-file "$COMMIT_MSG_FILE"
+          shell: bash
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All validations completed" >> $GITHUB_STEP_SUMMARY

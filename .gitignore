@@ -1,0 +1,272 @@
+# ==============================================================================
+# CREDENCIAIS E SECRETS
+# ==============================================================================
+# Chaves e certificados
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+
+# Arquivos de credenciais
+*credentials*
+*password*
+*secret*
+!.secrets.baseline
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# ==============================================================================
+# CONFIGURAÇÕES LOCAIS
+# ==============================================================================
+config/local.conf
+config/*.local.*
+*.local
+local/
+
+# ==============================================================================
+# LOGS
+# ==============================================================================
+*.log
+logs/
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# ==============================================================================
+# ARQUIVOS TEMPORÁRIOS
+# ==============================================================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+.tmp/
+
+# ==============================================================================
+# SISTEMA OPERACIONAL
+# ==============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ==============================================================================
+# IDEs E EDITORES
+# ==============================================================================
+# Visual Studio Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ==============================================================================
+# PYTHON (pip)
+# ==============================================================================
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+virtualenv/
+.virtualenvs/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# PEP 582
+__pypackages__/
+
+# ==============================================================================
+# NODE.JS (npm/yarn/pnpm)
+# ==============================================================================
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Testing
+coverage/
+.nyc_output
+
+# Production
+build/
+dist/
+
+# Misc
+.npm
+.eslintcache
+.node_repl_history
+.yarn-integrity
+
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ==============================================================================
+# RUNTIME E PROCESSOS
+# ==============================================================================
+*.pid
+*.seed
+*.pid.lock
+pids/
+
+# ==============================================================================
+# BACKUP E ARQUIVOS DE RECUPERAÇÃO
+# ==============================================================================
+*.bak
+*.backup
+*.old
+*-backup
+*-old
+
+# ==============================================================================
+# ARQUIVOS DE DADOS SENSÍVEIS
+# ==============================================================================
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+dump.rdb
+
+# ==============================================================================
+# OUTROS
+# ==============================================================================
+# Arquivos compactados
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Arquivos de debug
+*.stackdump
+core

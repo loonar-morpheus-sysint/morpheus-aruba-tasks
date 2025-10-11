@@ -1,0 +1,49 @@
+# Configuração para mensagens de commit semânticas
+# Segue o padrão Conventional Commits (https://www.conventionalcommits.org/)
+
+rules:
+  type-enum:
+    - 2
+    - always
+    - - feat      # Nova funcionalidade
+      - fix       # Correção de bug
+      - docs      # Mudanças na documentação
+      - style     # Formatação, ponto e vírgula, etc (sem mudança de código)
+      - refactor  # Refatoração de código (sem fix ou feat)
+      - perf      # Melhoria de performance
+      - test      # Adição ou correção de testes
+      - chore     # Tarefas de build, config, dependências
+      - ci        # Mudanças em CI/CD
+      - revert    # Reversão de commit anterior
+      - build     # Mudanças no sistema de build
+  
+  type-case:
+    - 2
+    - always
+    - lower-case
+  
+  type-empty:
+    - 2
+    - never
+  
+  subject-empty:
+    - 2
+    - never
+  
+  subject-full-stop:
+    - 2
+    - never
+    - '.'
+  
+  header-max-length:
+    - 2
+    - always
+    - 100
+  
+  body-leading-blank:
+    - 1
+    - always
+  
+  footer-leading-blank:
+    - 1
+    - always

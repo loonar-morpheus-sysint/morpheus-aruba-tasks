@@ -1,0 +1,13 @@
+# Configuração do shellcheck
+
+# Desabilita avisos específicos se necessário
+# disable=SC2034  # Variáveis não utilizadas
+
+# Habilita verificações opcionais
+enable=all
+
+# Define shell padrão
+shell=bash
+
+# Severidade mínima (error, warning, info, style)
+severity=warning

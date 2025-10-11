@@ -6,6 +6,7 @@ set -e
 
 # Source common functions
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
 source "${SOURCE_DIR}/commons.sh"
 
 # Main script
@@ -21,11 +22,12 @@ main() {
     
     log_info "Aruba CLI not found. Installing..."
     
-    # Check if running on Ubuntu
-    check_os
+    # Detect operating system
+    os_type=$(check_os)
+    log_info "Detected OS: ${os_type}"
     
     # Install dependencies (python3 and pip3)
-    install_deps
+    install_deps "${os_type}" python3 python3-pip
     
     # Install Aruba CLI using pip
     log_info "Installing Aruba aoscx CLI via pip..."
