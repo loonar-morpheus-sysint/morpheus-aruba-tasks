@@ -1,5 +1,4 @@
 #!/bin/bash
-
 ################################################################################
 # aruba_auth.sh - Aruba CLI Authentication Script
 ################################################################################
@@ -9,14 +8,44 @@
 #   arquivo .env. Deve ser importado (source) em outros scripts para
 #   fornecer autenticação centralizada.
 #
+# VARIÁVEIS DE AMBIENTE (.env):
+#
+#   ARUBA_HOST (obrigatória):
+#     Hostname ou endereço IP do controlador/switch Aruba.
+#     Exemplo: aruba-controller.example.com ou 192.168.1.100
+#
+#   ARUBA_USERNAME (obrigatória):
+#     Nome de usuário para autenticação no dispositivo Aruba.
+#     Deve ter permissões adequadas para executar comandos na CLI.
+#
+#   ARUBA_PASSWORD (obrigatória):
+#     Senha do usuário para autenticação no dispositivo Aruba.
+#     Mantenha o arquivo .env seguro e não o commit no repositório.
+#
+#   ARUBA_PORT (opcional):
+#     Porta customizada para conexão com o dispositivo Aruba.
+#     Padrão: 443 para HTTPS, 80 para HTTP.
+#     Exemplo: 8443 para portas não-padrão.
+#     Se não definida, usa a porta padrão do protocolo.
+#
+#   ARUBA_SSL_VERIFY (opcional):
+#     Controla a verificação do certificado SSL/TLS.
+#     Valores aceitos: true, false, yes, no, 1, 0
+#     Padrão: true (verificação habilitada).
+#     Use false apenas em ambientes de teste ou com certificados auto-assinados.
+#
 # USO DO ARQUIVO .env:
-#   Crie um arquivo .env no diretório do projeto com as seguintes variáveis:
+#   Copie o arquivo .env-sample para .env e preencha com seus valores:
+#   
+#   cp .env-sample .env
+#   
+#   Edite o arquivo .env com suas credenciais:
 #   
 #   ARUBA_HOST=192.168.1.1
 #   ARUBA_USERNAME=admin
 #   ARUBA_PASSWORD=seu_password_seguro
-#   ARUBA_API_VERSION=v10.13  # Opcional, padrão: v10.13
-#   ARUBA_VERIFY_SSL=false    # Opcional, padrão: false
+#   ARUBA_PORT=8443              # Opcional
+#   ARUBA_SSL_VERIFY=false       # Opcional
 #
 # COMO USAR EM OUTROS SCRIPTS:
 #   #!/bin/bash
@@ -59,6 +88,7 @@ load_env_file() {
     if [ ! -f "${ENV_FILE}" ]; then
         log_error "Arquivo .env não encontrado: ${ENV_FILE}"
         log_error "Crie um arquivo .env com ARUBA_HOST, ARUBA_USERNAME e ARUBA_PASSWORD"
+        log_error "Você pode copiar .env-sample para .env como ponto de partida"
         return 1
     fi
     
@@ -71,7 +101,7 @@ load_env_file() {
         [[ -z "$key" || "$key" =~ ^# ]] && continue
         
         # Remove aspas do valor se existirem
-        value=$(echo "$value" | sed -e 's/^["\'"'"']//' -e 's/["\'"'"']$//')
+        value=$(echo "$value" | sed -e 's/^["'\'']//' -e 's/["'\''']$//')
         
         # Exporta a variável
         export "$key=$value"
@@ -104,6 +134,17 @@ validate_env_vars() {
         return 1
     fi
     
+    # Log de variáveis opcionais se definidas
+    if [ -n "${ARUBA_PORT}" ]; then
+        log_info "Porta customizada configurada: ${ARUBA_PORT}"
+    fi
+    
+    if [ -n "${ARUBA_SSL_VERIFY}" ]; then
+        log_info "Verificação SSL configurada: ${ARUBA_SSL_VERIFY}"
+    else
+        log_info "Verificação SSL: usando padrão (true)"
+    fi
+    
     log_success "Todas as variáveis obrigatórias estão definidas"
     return 0
 }
@@ -119,7 +160,7 @@ aruba_authenticate() {
     
     # Define valores padrão para variáveis opcionais
     local api_version="${ARUBA_API_VERSION:-v10.13}"
-    local verify_ssl="${ARUBA_VERIFY_SSL:-false}"
+    local ssl_verify="${ARUBA_SSL_VERIFY:-true}"
     
     # Monta o comando de autenticação
     local auth_cmd="aoscx session-login"
@@ -128,15 +169,27 @@ aruba_authenticate() {
     auth_cmd="$auth_cmd -p ${ARUBA_PASSWORD}"
     auth_cmd="$auth_cmd --api-version ${api_version}"
     
-    if [ "${verify_ssl}" = "false" ]; then
+    # Adiciona porta customizada se definida
+    if [ -n "${ARUBA_PORT}" ]; then
+        auth_cmd="$auth_cmd --port ${ARUBA_PORT}"
+        log_info "Usando porta customizada: ${ARUBA_PORT}"
+    fi
+    
+    # Verifica se deve desabilitar verificação SSL
+    # Aceita: false, no, 0 (case insensitive)
+    local ssl_verify_lower=$(echo "${ssl_verify}" | tr '[:upper:]' '[:lower:]')
+    if [[ "${ssl_verify_lower}" == "false" || "${ssl_verify_lower}" == "no" || "${ssl_verify_lower}" == "0" ]]; then
         auth_cmd="$auth_cmd --no-verify-ssl"
+        log_warning "Verificação SSL desabilitada"
+    else
+        log_info "Verificação SSL habilitada"
     fi
     
     log_debug "Executando comando de autenticação"
     
     # Executa o comando e captura o resultado
     if eval "${auth_cmd}" > /dev/null 2>&1; then
-        log_success "Autenticação bem-sucedida no switch Aruba CX10000"
+        log_success "Autenticação bem-sucedida no switch Aruba"
         export ARUBA_AUTHENTICATED=true
         export ARUBA_SESSION_HOST="${ARUBA_HOST}"
         return 0
