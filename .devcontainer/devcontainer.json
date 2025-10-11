@@ -7,35 +7,144 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        // Bash Development
         "timonwong.shellcheck",
         "rogalmic.bash-debug",
+        "foxundermoon.shell-format",
+        "mads-hartmann.bash-ide-vscode",
+        
+        // Python Development
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.pylint",
+        "ms-python.flake8",
+        "ms-python.black-formatter",
+        "ms-python.debugpy",
+        
+        // Markdown & Documentation
         "davidanson.vscode-markdownlint",
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-preview-github-styles",
+        
+        // Git & GitHub
+        "github.vscode-pull-request-github",
+        "github.vscode-github-actions",
+        "eamodio.gitlens",
+        "donjayamanne.githistory",
+        
+        // AI Assistants
         "github.copilot",
         "github.copilot-chat",
-        "github.vscode-github-actions",
+        
+        // Code Quality & Formatting
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
         "redhat.vscode-yaml",
-        "foxundermoon.shell-format"
+        "redhat.vscode-xml",
+        
+        // Utilities
+        "usernamehw.errorlens",
+        "aaron-bond.better-comments",
+        "streetsidesoftware.code-spell-checker",
+        "wayou.vscode-todo-highlight",
+        "gruntfuggly.todo-tree",
+        
+        // Security
+        "snyk-security.snyk-vulnerability-scanner",
+        
+        // Container & DevOps
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers"
       ],
       "settings": {
+        // Shellcheck
         "shellcheck.enable": true,
         "shellcheck.run": "onType",
+        "shellcheck.executablePath": "/usr/bin/shellcheck",
+        "shellcheck.customArgs": [],
+        
+        // Shell Format
+        "shellformat.path": "/usr/bin/shfmt",
+        "shellformat.flag": "-i 2 -ci -bn",
+        
+        // Bash IDE
+        "bashIde.explainshellEndpoint": "https://explainshell.com",
+        "bashIde.shellcheckPath": "/usr/bin/shellcheck",
+        
+        // Python
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.formatting.provider": "black",
+        "python.analysis.typeCheckingMode": "basic",
+        
+        // Markdown
         "markdownlint.config": {
           "extends": ".markdownlint.json"
         },
+        "markdown.preview.breaks": true,
+        
+        // Editor
         "files.eol": "\n",
         "files.insertFinalNewline": true,
-        "files.trimTrailingWhitespace": true
+        "files.trimTrailingWhitespace": true,
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll": "explicit"
+        },
+        "editor.rulers": [80, 120],
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        
+        // Git
+        "git.autofetch": true,
+        "git.confirmSync": false,
+        "git.enableSmartCommit": true,
+        
+        // Terminal
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.scrollback": 10000,
+        
+        // File Associations
+        "[shellscript]": {
+          "editor.defaultFormatter": "foxundermoon.shell-format",
+          "editor.tabSize": 2
+        },
+        "[markdown]": {
+          "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+          "editor.wordWrap": "on"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.python",
+          "editor.tabSize": 4
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "redhat.vscode-yaml"
+        }
       }
     }
   },
   "mounts": [
     "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "remoteUser": "vscode",
   "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest",
+      "ppa": true
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
   }
 }

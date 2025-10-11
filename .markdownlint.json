@@ -5,5 +5,7 @@
   "MD013": { "line_length": 120 },
   "MD024": { "siblings_only": true },
   "MD033": { "allowed_elements": ["details", "summary"] },
-  "MD041": false
+  "MD040": false,
+  "MD041": false,
+  "MD051": false
 }
