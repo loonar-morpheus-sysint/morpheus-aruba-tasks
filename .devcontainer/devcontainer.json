@@ -4,6 +4,13 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
+  "containerEnv": {
+    "OPENAI_API_BASE": "https://api.githubcopilot.com",
+    "OPENAI_API_KEY": "${localEnv:GITHUB_TOKEN}",
+    "AIDER_MODEL": "gpt-4",
+    "AIDER_AUTO_COMMITS": "false",
+    "AIDER_DARK_MODE": "true"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -130,6 +137,11 @@
     },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": true,
+      "optimize": true
     }
   }
 }

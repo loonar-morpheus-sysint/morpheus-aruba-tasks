@@ -41,12 +41,24 @@ echo ""
 echo "🐍 Ecossistema Python:"
 check_tool "Python" "python3" "--version"
 check_tool "pip" "pip3" "--version"
+
+# Instala Aider AI
+echo ""
+echo "🤖 Instalando Aider AI..."
+if pip3 install --quiet aider-install 2>/dev/null; then
+  echo "✅ Aider instalado com sucesso"
+else
+  echo "❌ Falha ao instalar Aider"
+fi
+
+# Continua verificação de ferramentas Python
 check_tool "pylint" "pylint" "--version"
 check_tool "flake8" "flake8" "--version"
 check_tool "black" "black" "--version"
 check_tool "mypy" "mypy" "--version"
 check_tool "bandit" "bandit" "--version"
 check_tool "pytest" "pytest" "--version"
+check_tool "Aider AI" "aider" "--version"
 
 # Node.js Ecosystem
 echo ""
@@ -122,6 +134,39 @@ echo "Usuário: ${current_user}"
 echo "Workspace: ${PWD}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Valida configuração do Aider
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🤖 Validando configuração do Aider AI"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if command -v aider &> /dev/null; then
+  echo "✅ Aider está disponível no PATH"
+
+  # Verifica variáveis de ambiente
+  if [[ -n "${OPENAI_API_BASE}" ]]; then
+    echo "✅ OPENAI_API_BASE configurado: ${OPENAI_API_BASE}"
+  else
+    echo "⚠️  OPENAI_API_BASE não configurado"
+  fi
+
+  if [[ -n "${OPENAI_API_KEY}" ]]; then
+    echo "✅ OPENAI_API_KEY configurado (valor oculto)"
+  else
+    echo "⚠️  OPENAI_API_KEY não configurado"
+    echo "   💡 Defina a variável de ambiente GITHUB_TOKEN para usar o GitHub Copilot"
+  fi
+
+  if [[ -n "${AIDER_MODEL}" ]]; then
+    echo "✅ Modelo configurado: ${AIDER_MODEL}"
+  else
+    echo "⚠️  AIDER_MODEL não configurado (usando padrão)"
+  fi
+else
+  echo "❌ Aider não está disponível"
+  echo "   💡 Execute: pip3 install aider-install"
+fi
+
 echo ""
 echo "🎉 Configuração concluída com sucesso!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -131,6 +176,7 @@ echo "  • Execute 'shellcheck script.sh' para validar scripts"
 echo "  • Execute 'markdownlint *.md' para validar documentação"
 echo "  • Execute 'pre-commit run --all-files' para validar tudo"
 echo "  • Use 'gh' para interagir com GitHub"
+echo "  • Use 'aider' para desenvolvimento assistido por IA com GitHub Copilot"
 echo ""
 echo "🚀 Pronto para começar o desenvolvimento!"
 echo ""

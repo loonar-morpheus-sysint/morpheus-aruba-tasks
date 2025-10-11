@@ -38,6 +38,29 @@ code .
 
 O container será construído automaticamente com todas as ferramentas instaladas.
 
+## 🤖 AI-Assisted Development with Aider
+
+Este projeto está configurado para usar o **Aider AI**, uma ferramenta de desenvolvimento assistido por IA que utiliza o GitHub Copilot como backend.
+
+### Início Rápido com Aider
+
+```bash
+# Validar instalação
+./validate-aider.sh
+
+# Iniciar Aider
+aider
+
+# Com contexto do projeto
+aider AGENTS.md commons.sh
+```
+
+### Documentação
+
+- **Quick Start**: [AIDER_QUICKSTART.md](./AIDER_QUICKSTART.md)
+- **Setup Completo**: [AIDER_SETUP.md](./AIDER_SETUP.md)
+- **Padrões do Projeto**: [AGENTS.md](./AGENTS.md)
+
 ## ✅ Validações Automáticas
 
 ### Pre-commit Hooks
