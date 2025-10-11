@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # commons.sh - Reusable functions for Aruba CLI installation
 # These functions provide logging, OS detection, dependency management, and installation verification
 
@@ -15,11 +14,12 @@ NC='\033[0m' # No Color
 # Arguments:
 #   $1 - Message to log
 # Outputs:
-#   Writes message to stdout in blue
+#   Writes message to stdout in blue and sends to syslog
 #######################################
 log_info() {
     local message="$1"
     echo -e "${BLUE}[INFO]${NC} ${message}"
+    logger -t "$(basename $0)" -p user.info "[INFO] ${message}"
 }
 
 #######################################
@@ -27,11 +27,12 @@ log_info() {
 # Arguments:
 #   $1 - Warning message to log
 # Outputs:
-#   Writes warning to stdout in yellow
+#   Writes warning to stdout in yellow and sends to syslog
 #######################################
 log_warn() {
     local message="$1"
     echo -e "${YELLOW}[WARN]${NC} ${message}"
+    logger -t "$(basename $0)" -p user.warning "[WARN] ${message}"
 }
 
 #######################################
@@ -39,11 +40,11 @@ log_warn() {
 # Arguments:
 #   $1 - Error message to log
 # Outputs:
-#   Writes error to stderr in red
+#   Sends error to syslog only
 #######################################
 log_error() {
     local message="$1"
-    echo -e "${RED}[ERROR]${NC} ${message}" >&2
+    logger -t "$(basename $0)" -p user.error "[ERROR] ${message}"
 }
 
 #######################################
