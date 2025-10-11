@@ -19,7 +19,7 @@ Todos os scripts devem utilizar o arquivo `commons.sh` como base para:
 - Validação de variáveis de ambiente
 - Tratamento de erros consistente
 
-### Exemplo de Inclusão:
+### Exemplo de Inclusão
 
 ```bash
 #!/bin/bash
@@ -61,11 +61,11 @@ Todas as funções devem implementar logging de entrada, saída e erros:
 ```bash
 minha_funcao() {
   _log_func_enter "minha_funcao"  # Entrada da função
-  
+
   log_info "Executando operação X"  # Operações importantes
-  
+
   log_info "Coletando informações do sistema"
-  
+
   if aoscx "show version" > "system_info.txt"; then
     log_success "Informações coletadas em system_info.txt"
     _log_func_exit_ok "collect_system_info"

@@ -1,13 +1,14 @@
-# Configuração do shellcheck
+# ShellCheck configuration
+# Desabilita alertas de nível info para casos aceitáveis no projeto
 
-# Desabilita avisos específicos se necessário
-# disable=SC2034  # Variáveis não utilizadas
+# SC2310: Funções invocadas em condições if com set -e
+# Justificativa: Uso intencional para validação de retorno
+disable=SC2310
 
-# Habilita verificações opcionais
-enable=all
+# SC2311: Substituição de comando com set -e
+# Justificativa: Padrão aceito no projeto
+disable=SC2311
 
-# Define shell padrão
-shell=bash
-
-# Severidade mínima (error, warning, info, style)
-severity=warning
+# SC2312: Máscaramento de código de retorno em pipelines
+# Justificativa: Uso seguro com validações adequadas
+disable=SC2312

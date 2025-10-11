@@ -124,12 +124,14 @@ git commit -m "feat: esta é uma mensagem extremamente longa que ultrapassa o li
 ```
 
 **Componentes**:
+
 - **tipo**: Um dos tipos permitidos (feat, fix, docs, etc.)
 - **escopo**: (Opcional) Contexto da mudança entre parênteses
 - **!**: (Opcional) Indica breaking change
 - **descrição**: Descrição concisa da mudança
 
 **Exemplos**:
+
 ```text
 feat: adicionar validação de entrada
 feat(auth): implementar OAuth

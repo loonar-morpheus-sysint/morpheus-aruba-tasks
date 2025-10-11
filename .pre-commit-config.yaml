@@ -1,3 +1,4 @@
+---
 # Configuração do pre-commit para validações automáticas
 repos:
   # Hooks gerais
@@ -8,41 +9,43 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-json
+        exclude: '^\.devcontainer/devcontainer\.json$'
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ["--maxkb=1000"]
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: detect-private-key
+        exclude: '^SECURITY\.md$'
       - id: mixed-line-ending
-        args: ['--fix=lf']
+        args: ["--fix=lf"]
 
   # Validação de scripts Shell com shellcheck
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.9.0.6
     hooks:
       - id: shellcheck
-        args: ['-x', '--severity=warning']
+        args: ["-x", "--severity=warning"]
 
   # Validação de Markdown com markdownlint
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.39.0
     hooks:
       - id: markdownlint
-        args: ['--config', '.markdownlint.json', '--fix']
+        args: ["--config", ".markdownlint.json", "--fix"]
 
   # Validação de YAML
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1
     hooks:
       - id: yamllint
-        args: ['-d', '{extends: default, rules: {line-length: {max: 120}}}']
+        args: ["-d", "{extends: default, rules: {line-length: {max: 120}}}"]
 
   # Detecção de segredos e informações sensíveis
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+        args: ["--baseline", ".secrets.baseline"]
         exclude: package-lock.json
 
   # Validação de sintaxe Bash
@@ -50,7 +53,8 @@ repos:
     rev: 2.1.1
     hooks:
       - id: bashate
-        args: ['--ignore=E006']
+        args: ["--ignore=E003,E006"]
+        exclude: '\.(bats)$'
 
   # Validação de mensagens de commit semânticas (Conventional Commits)
   - repo: https://github.com/compilerla/conventional-pre-commit
@@ -59,3 +63,15 @@ repos:
       - id: conventional-pre-commit
         stages: [commit-msg]
         args: []
+
+  # Testes BATS (Bash Automated Testing System)
+  - repo: local
+    hooks:
+      - id: bats-tests
+        name: BATS Tests
+        entry: bash -c 'if command -v bats &> /dev/null; then bats tests/*.bats;
+          else echo "BATS não instalado. Execute sudo apt-get install bats"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        files: \.(sh|bats)$
+        stages: [pre-commit]

@@ -148,11 +148,11 @@ VERSION="1.0.0"
 # Funções
 main_function() {
   _log_func_enter "main_function"
-  
+
   log_info "Iniciando operação..."
-  
+
   # Lógica do script aqui
-  
+
   if comando_executado_com_sucesso; then
     log_success "Operação concluída"
     _log_func_exit_ok "main_function"
@@ -167,10 +167,10 @@ main_function() {
 # Função principal
 main() {
   _log_func_enter "main"
-  
+
   main_function
   local exit_code=$?
-  
+
   _log_func_exit_ok "main"
   return ${exit_code}
 }
@@ -188,10 +188,10 @@ Todas as funções **DEVEM** implementar logging:
 ```bash
 minha_funcao() {
   _log_func_enter "minha_funcao"  # Entrada
-  
+
   log_info "Executando ação X"    # Operações importantes
   log_debug "Detalhes técnicos"   # Debug (opcional)
-  
+
   if operacao_sucesso; then
     log_success "Operação bem-sucedida"
     _log_func_exit_ok "minha_funcao"

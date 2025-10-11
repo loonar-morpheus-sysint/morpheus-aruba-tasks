@@ -157,6 +157,7 @@ git checkout -b feature/minha-feature
 ### 2. Fazer Mudanças
 
 Edite os arquivos necessários seguindo:
+
 - [AGENTS.md](./AGENTS.md) - Padrões de código
 - [SECURITY.md](./SECURITY.md) - Práticas de segurança
 - [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) - Padrão de mensagens de commit

@@ -1,6 +1,6 @@
 # morpheus-aruba-tasks
 
-> **⚠️ WIP - Work in Progress**  
+> **⚠️ WIP - Work in Progress**
 > Este projeto está em desenvolvimento ativo. Funcionalidades e documentação podem sofrer alterações.
 
 ![LoonarBR cover](./_assets/loonarbr_cover.jpeg)
@@ -50,6 +50,7 @@ O projeto utiliza pre-commit para validações automáticas antes de cada commit
 - **JSON Validator**: Valida sintaxe JSON
 - **Detect Secrets**: Detecta credenciais e informações sensíveis
 - **Commit Messages**: Valida mensagens de commit semânticas (Conventional Commits)
+- **BATS Tests**: Executa testes automatizados dos scripts (veja [TESTING.md](./TESTING.md))
 - **Formatação**: Remove espaços em branco, adiciona quebra de linha final
 
 ### Executando Validações Manualmente
@@ -105,10 +106,13 @@ Consulte [AGENTS.md](./AGENTS.md) para diretrizes completas de desenvolvimento.
 
 Consulte [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) para padrões de mensagens de commit.
 
+Consulte [TESTING.md](./TESTING.md) para configuração e execução de testes automatizados.
+
 **Checklist antes de commit**:
 
 - [ ] Todos os scripts `.sh` passam no shellcheck
 - [ ] Todos os arquivos `.md` passam no markdownlint
+- [ ] Testes BATS estão passando (execute `./run-tests.sh`)
 - [ ] Nenhuma credencial está sendo commitada
 - [ ] Mensagem de commit segue padrão semântico (feat:, fix:, docs:, etc.)
 - [ ] Documentação atualizada

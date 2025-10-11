@@ -11,6 +11,7 @@ NC='\033[0m' # No Color
 
 # Load environment variables from .env file if it exists
 if [[ -f ".env" ]]; then
+    # shellcheck disable=SC1091  # .env file is optional and not tracked
     source .env
 fi
 
@@ -20,7 +21,8 @@ if [[ -n "${LOG_VIEW}" ]]; then
     IFS=',' read -ra LOG_VIEW_ARRAY <<< "${LOG_VIEW}"
     # Trim whitespace from each element
     for i in "${!LOG_VIEW_ARRAY[@]}"; do
-        LOG_VIEW_ARRAY[$i]=$(echo "${LOG_VIEW_ARRAY[$i]}" | xargs)
+        # shellcheck disable=SC2004  # Array index doesn't need arithmetic expansion
+        LOG_VIEW_ARRAY[${i}]=$(echo "${LOG_VIEW_ARRAY[${i}]}" | xargs)
     done
 else
     # Default: show all levels
@@ -59,10 +61,10 @@ log_message() {
     local label="$2"
     local color="$3"
     local message="$4"
-    
+
     # Always send to syslog
-    logger -t "$(basename $0)" -p "user.${syslog_level}" "[${label}] ${message}"
-    
+    logger -t "$(basename "$0")" -p "user.${syslog_level}" "[${label}] ${message}"
+
     # Display on screen only if level is in LOG_VIEW
     if should_display_log "${syslog_level}"; then
         echo -e "${color}[${label}]${NC} ${message}"
@@ -183,12 +185,14 @@ check_installed() {
 #   0 on success, 1 on unknown OS
 #######################################
 check_os() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
+    if [[ "${OSTYPE}" == "darwin"* ]]; then
         echo "macos"
         return 0
     elif [[ -f /etc/os-release ]]; then
+        # shellcheck source=/dev/null
         . /etc/os-release
-        case "$ID" in
+        # shellcheck disable=SC2154  # ID is defined in /etc/os-release
+        case "${ID}" in
             ubuntu)
                 echo "ubuntu"
                 return 0
@@ -232,15 +236,15 @@ install_deps() {
     local os_type="$1"
     shift
     local packages=("$@")
-    
+
     if [[ ${#packages[@]} -eq 0 ]]; then
         log_error "No packages specified for installation"
         return 1
     fi
-    
+
     log_info "Installing dependencies: ${packages[*]}"
-    
-    case "$os_type" in
+
+    case "${os_type}" in
         ubuntu|debian)
             sudo apt-get update -qq || return 1
             sudo apt-get install -y "${packages[@]}" || return 1
@@ -256,11 +260,11 @@ install_deps() {
             brew install "${packages[@]}" || return 1
             ;;
         *)
-            log_error "Unsupported operating system: $os_type"
+            log_error "Unsupported operating system: ${os_type}"
             return 1
             ;;
     esac
-    
+
     return 0
 }
 
@@ -277,19 +281,19 @@ install_deps() {
 verify_installation() {
     local command_name="$1"
     local version_pattern="${2:-}"
-    
+
     if ! check_installed "${command_name}"; then
         log_error "${command_name} is not installed or not in PATH"
         return 1
     fi
-    
+
     log_info "${command_name} is installed successfully"
-    
+
     # Try to get version information
     local version_output=""
     if version_output=$("${command_name}" --version 2>&1); then
         log_info "${command_name} version: ${version_output}"
-        
+
         # If version pattern provided, validate it
         if [[ -n "${version_pattern}" ]]; then
             if echo "${version_output}" | grep -qE "${version_pattern}"; then
@@ -303,6 +307,6 @@ verify_installation() {
     else
         log_info "${command_name} is available (version info not accessible)"
     fi
-    
+
     return 0
 }

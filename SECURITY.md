@@ -457,7 +457,7 @@ O arquivo `.pre-commit-config.yaml` configura validações automáticas antes de
 
 | Hook | Descrição | Exemplos |
 |------|-----------|----------|
-| `trailing-whitespace` | Remove espaços no final das linhas | `texto    ` → `texto` |
+| `trailing-whitespace` | Remove espaços no final das linhas | `texto` → `texto` |
 | `end-of-file-fixer` | Garante linha vazia no final | Adiciona `\n` no EOF |
 | `check-yaml` | Valida sintaxe YAML | Detecta `tab` em YAML |
 | `check-json` | Valida sintaxe JSON | Vírgula extra, aspas |
@@ -537,7 +537,7 @@ if [ "$var" = "value" ]; then
 | Regra | Descrição | Exemplo |
 |-------|-----------|---------|
 | MD003 | Estilo de headers ATX | `# Header` não `Header\n===` |
-| MD007 | Indentação de listas: 2 espaços | `  - item` |
+| MD007 | Indentação de listas: 2 espaços | `- item` |
 | MD013 | Comprimento máximo: 120 chars | Quebra linhas longas |
 | MD024 | Headers duplicados OK em seções diferentes | Permite múltiplos "# Introdução" |
 | MD033 | HTML permitido: `<details>`, `<summary>` | Para collapsible sections |
@@ -829,18 +829,18 @@ markdownlint --ignore node_modules '**/*.md'
 # ✅ Sempre valide parâmetros
 validate_input() {
   local input=$1
-  
+
   if [[ -z "$input" ]]; then
     log_error "Parâmetro obrigatório não fornecido"
     return 1
   fi
-  
+
   # Valide padrão esperado
   if [[ ! "$input" =~ ^[a-zA-Z0-9_-]+$ ]]; then
     log_error "Entrada contém caracteres inválidos"
     return 1
   fi
-  
+
   return 0
 }
 

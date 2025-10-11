@@ -124,12 +124,14 @@ git commit -m "feat: nova funcionalidade"
 ```
 
 **Se válida** ✅:
+
 ```text
 conventional-pre-commit................................Passed
 [branch abc123] feat: nova funcionalidade
 ```
 
 **Se inválida** ❌:
+
 ```text
 conventional-pre-commit................................Failed
 - hook id: conventional-pre-commit
@@ -224,11 +226,13 @@ O GitHub Actions também pode validar mensagens de commit:
 ## 🎯 Próximos Passos
 
 1. **Instalar hooks no dev container**:
+
    ```bash
    pre-commit install --hook-type commit-msg
    ```
 
 2. **Testar validação**:
+
    ```bash
    git add .
    git commit -m "feat: teste de validação"

@@ -12,7 +12,7 @@ check_tool() {
   local tool_name="$1"
   local tool_cmd="$2"
   local version_flag="${3:---version}"
-  
+
   if command -v "${tool_cmd}" &> /dev/null; then
     local version
     version=$("${tool_cmd}" "${version_flag}" 2>&1 | head -n 1) || true
@@ -85,7 +85,7 @@ if [[ -f .pre-commit-config.yaml ]]; then
   else
     echo "⚠️  Falha ao instalar pre-commit hooks"
   fi
-  
+
   if pre-commit install --hook-type commit-msg; then
     echo "✅ Commit-msg hooks instalados"
   else
