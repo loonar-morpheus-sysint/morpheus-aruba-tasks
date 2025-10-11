@@ -9,17 +9,97 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Load environment variables from .env file if it exists
+if [[ -f ".env" ]]; then
+    source .env
+fi
+
+# Parse LOG_VIEW from .env and store in array
+# Format: "debug, info, notice, warn, err, crit, alert, emerg"
+if [[ -n "${LOG_VIEW}" ]]; then
+    IFS=',' read -ra LOG_VIEW_ARRAY <<< "${LOG_VIEW}"
+    # Trim whitespace from each element
+    for i in "${!LOG_VIEW_ARRAY[@]}"; do
+        LOG_VIEW_ARRAY[$i]=$(echo "${LOG_VIEW_ARRAY[$i]}" | xargs)
+    done
+else
+    # Default: show all levels
+    LOG_VIEW_ARRAY=("debug" "info" "notice" "warn" "err" "crit" "alert" "emerg")
+fi
+
+#######################################
+# Check if a log level should be displayed
+# Arguments:
+#   $1 - Log level to check
+# Returns:
+#   0 if should display, 1 if not
+#######################################
+should_display_log() {
+    local level="$1"
+    for view_level in "${LOG_VIEW_ARRAY[@]}"; do
+        if [[ "${view_level}" == "${level}" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+#######################################
+# Generic log function
+# Arguments:
+#   $1 - Syslog severity level (debug, info, notice, warn, err, crit, alert, emerg)
+#   $2 - Display label (e.g., DEBUG, INFO, WARN, ERROR)
+#   $3 - Color code for display
+#   $4 - Message to log
+# Outputs:
+#   Writes message to stdout (if enabled in LOG_VIEW) and sends to syslog
+#######################################
+log_message() {
+    local syslog_level="$1"
+    local label="$2"
+    local color="$3"
+    local message="$4"
+    
+    # Always send to syslog
+    logger -t "$(basename $0)" -p "user.${syslog_level}" "[${label}] ${message}"
+    
+    # Display on screen only if level is in LOG_VIEW
+    if should_display_log "${syslog_level}"; then
+        echo -e "${color}[${label}]${NC} ${message}"
+    fi
+}
+
+#######################################
+# Log debug message
+# Arguments:
+#   $1 - Message to log
+# Outputs:
+#   Writes message to stdout (if enabled) and sends to syslog with debug priority
+#######################################
+log_debug() {
+    log_message "debug" "DEBUG" "${NC}" "$1"
+}
+
 #######################################
 # Log informational message
 # Arguments:
 #   $1 - Message to log
 # Outputs:
-#   Writes message to stdout in blue and sends to syslog
+#   Writes message to stdout (if enabled) and sends to syslog with info priority
 #######################################
 log_info() {
-    local message="$1"
-    echo -e "${BLUE}[INFO]${NC} ${message}"
-    logger -t "$(basename $0)" -p user.info "[INFO] ${message}"
+    log_message "info" "INFO" "${BLUE}" "$1"
+}
+
+#######################################
+# Log notice message
+# Arguments:
+#   $1 - Message to log
+# Outputs:
+#   Writes message to stdout (if enabled) and sends to syslog with notice priority
+#######################################
+log_notice() {
+    log_message "notice" "NOTICE" "${GREEN}" "$1"
 }
 
 #######################################
@@ -27,12 +107,10 @@ log_info() {
 # Arguments:
 #   $1 - Warning message to log
 # Outputs:
-#   Writes warning to stdout in yellow and sends to syslog
+#   Writes warning to stdout (if enabled) and sends to syslog with warning priority
 #######################################
 log_warn() {
-    local message="$1"
-    echo -e "${YELLOW}[WARN]${NC} ${message}"
-    logger -t "$(basename $0)" -p user.warning "[WARN] ${message}"
+    log_message "warn" "WARN" "${YELLOW}" "$1"
 }
 
 #######################################
@@ -40,11 +118,43 @@ log_warn() {
 # Arguments:
 #   $1 - Error message to log
 # Outputs:
-#   Sends error to syslog only
+#   Writes error to stdout (if enabled) and sends to syslog with err priority
 #######################################
 log_error() {
-    local message="$1"
-    logger -t "$(basename $0)" -p user.error "[ERROR] ${message}"
+    log_message "err" "ERROR" "${RED}" "$1"
+}
+
+#######################################
+# Log critical message
+# Arguments:
+#   $1 - Critical message to log
+# Outputs:
+#   Writes critical message to stdout (if enabled) and sends to syslog with crit priority
+#######################################
+log_crit() {
+    log_message "crit" "CRITICAL" "${RED}" "$1"
+}
+
+#######################################
+# Log alert message
+# Arguments:
+#   $1 - Alert message to log
+# Outputs:
+#   Writes alert to stdout (if enabled) and sends to syslog with alert priority
+#######################################
+log_alert() {
+    log_message "alert" "ALERT" "${RED}" "$1"
+}
+
+#######################################
+# Log emergency message
+# Arguments:
+#   $1 - Emergency message to log
+# Outputs:
+#   Writes emergency to stdout (if enabled) and sends to syslog with emerg priority
+#######################################
+log_emerg() {
+    log_message "emerg" "EMERGENCY" "${RED}" "$1"
 }
 
 #######################################
