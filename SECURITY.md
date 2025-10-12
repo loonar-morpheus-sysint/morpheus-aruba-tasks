@@ -4,15 +4,15 @@ Este documento descreve as práticas de segurança, ferramentas de validação e
 
 ## Índice
 
-- [Proteção de Dados Sensíveis](#proteção-de-dados-sensíveis)
-- [Regras do .gitignore](#regras-do-gitignore)
-- [Pre-commit Hooks](#pre-commit-hooks)
-- [Ferramentas de Validação](#ferramentas-de-validação)
-- [Validação de Scripts Shell](#validação-de-scripts-shell)
-- [Validação de Documentação Markdown](#validação-de-documentação-markdown)
-- [Práticas de Segurança em Scripts](#práticas-de-segurança-em-scripts)
-- [Automação e CI/CD](#automação-e-cicd)
-- [Manutenção e Atualizações](#manutenção-e-atualizações)
+- Proteção de Dados Sensíveis
+- Regras do .gitignore
+- Pre-commit Hooks
+- Ferramentas de Validação
+- Validação de Scripts Shell
+- Validação de Documentação Markdown
+- Práticas de Segurança em Scripts
+- Automação e CI/CD
+- Manutenção e Atualizações
 
 ## Proteção de Dados Sensíveis
 

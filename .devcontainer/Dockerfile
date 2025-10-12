@@ -7,6 +7,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     software-properties-common \
     shellcheck \
     shfmt \
+    bats \
     git \
     curl \
     wget \

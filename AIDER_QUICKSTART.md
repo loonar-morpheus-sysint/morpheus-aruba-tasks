@@ -1,6 +1,6 @@
-# 🤖 Aider AI Quick Start
+# 🤖 Aider — Quick Start (AI Powered)
 
-## Start Aider
+## Start Aider (AI assisted CLI)
 
 ```bash
 # Basic usage
@@ -60,7 +60,7 @@ aider create-vrf.sh tests/test_create-vrf.bats
 > following the pattern in test_helper.bash
 ```
 
-## Environment Variables
+## Environment Variables (pre-configurado no Dev Container)
 
 - `OPENAI_API_BASE=https://api.githubcopilot.com`
 - `OPENAI_API_KEY=${GITHUB_TOKEN}`

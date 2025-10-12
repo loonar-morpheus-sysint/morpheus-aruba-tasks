@@ -5,17 +5,17 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 
 ## 📋 Índice
 
-- [Infraestrutura e Hardware](#infraestrutura-e-hardware)
-- [Plataformas e Serviços](#plataformas-e-serviços)
-- [Linguagens e Runtimes](#linguagens-e-runtimes)
-- [Ferramentas CLI Core](#ferramentas-cli-core)
-- [Pacotes Python (pip)](#pacotes-python-pip)
-- [Pacotes Node.js (npm)](#pacotes-nodejs-npm)
-- [Utilitários de Sistema](#utilitários-de-sistema)
-- [Extensões VS Code](#extensões-vs-code)
-- [DevContainer Features](#devcontainer-features)
-- [Padrões e Especificações](#padrões-e-especificações)
-- [Serviços Externos](#serviços-externos)
+- Infraestrutura e Hardware
+- Plataformas e Serviços
+- Linguagens e Runtimes
+- Ferramentas CLI Core
+- Pacotes Python (pip)
+- Pacotes Node.js (npm)
+- Utilitários de Sistema
+- Extensões VS Code
+- DevContainer Features
+- Padrões e Especificações
+- Serviços Externos
 
 ---
 
@@ -88,14 +88,14 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | flake8 | latest | Verificador de estilo Python (PEP8) | [Site](https://flake8.pycqa.org/) | MIT |
 | mypy | latest | Verificador de tipos estáticos para Python | [Site](https://mypy.readthedocs.io/) | MIT |
 
-### Formatação
+### Formatação (Python)
 
 | Nome | Versão | Descrição | Website | Licença |
 |------|--------|-----------|---------|---------|
 | black | latest | Formatador de código Python | [Site](https://black.readthedocs.io/) | MIT |
 | autopep8 | latest | Formatador automático PEP8 | [GitHub](https://github.com/hhatto/autopep8) | MIT |
 
-### Segurança
+### Segurança (Python)
 
 | Nome | Versão | Descrição | Website | Licença |
 |------|--------|-----------|---------|---------|
@@ -130,7 +130,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | markdownlint-cli2 | latest | Versão melhorada do markdownlint-cli | [GitHub](https://github.com/DavidAnson/markdownlint-cli2) | MIT |
 | eslint | latest | Linter para JavaScript/TypeScript | [Site](https://eslint.org/) | MIT |
 
-### Formatação
+### Formatação (Node)
 
 | Nome | Versão | Descrição | Website | Licença |
 |------|--------|-----------|---------|---------|
@@ -236,7 +236,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | wayou.vscode-todo-highlight | TODO Highlight | Destaque de TODOs e FIXMEs | MIT |
 | gruntfuggly.todo-tree | TODO Tree | Visualização em árvore de TODOs | MIT |
 
-### Segurança
+### Segurança (Node)
 
 | ID da Extensão | Nome | Descrição | Licença |
 |----------------|------|-----------|---------|

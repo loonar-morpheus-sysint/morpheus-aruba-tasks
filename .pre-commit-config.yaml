@@ -3,7 +3,7 @@
 repos:
   # Hooks gerais
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -21,28 +21,28 @@ repos:
 
   # Validação de scripts Shell com shellcheck
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
         args: ["-x", "--severity=warning"]
 
   # Validação de Markdown com markdownlint
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         args: ["--config", ".markdownlint.json", "--fix"]
 
   # Validação de YAML
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: ["-d", "{extends: default, rules: {line-length: {max: 120}}}"]
 
   # Detecção de segredos e informações sensíveis
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
@@ -58,7 +58,7 @@ repos:
 
   # Validação de mensagens de commit semânticas (Conventional Commits)
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.0.0
+    rev: v4.3.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]

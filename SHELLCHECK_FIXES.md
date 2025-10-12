@@ -22,21 +22,21 @@ seguindo os padrões estabelecidos em `AGENTS.md`.
 
 ### 1. commons.sh
 
-#### Correções Críticas
+**Correções Críticas**
 
 - ✅ **SC2004**: Adicionado comentário de supressão para índices de array
 - ✅ **SC2154**: Adicionado `# shellcheck disable` para variável `ID` de `/etc/os-release`
 - ✅ **SC1091**: Adicionado `# shellcheck disable` para source de arquivo `.env` opcional
 - ✅ **SC2250**: Padronizado uso de `${var}` em substituições de variáveis
 
-#### Melhorias
+**Melhorias**
 
 - Uso consistente de `[[ ]]` para testes
 - Citações duplas em todas as variáveis para prevenir globbing
 
 ### 2. aruba-auth.sh
 
-#### Correções Críticas
+**Correções Críticas**
 
 - ✅ **SC1073/SC1072**: Corrigido escape de aspas em comando `sed`
   - Antes: `sed -e 's/^["'\'']//' -e 's/["'\''']$//'`
@@ -51,14 +51,14 @@ seguindo os padrões estabelecidos em `AGENTS.md`.
   - Depois: `local ssl_verify_lower` + `ssl_verify_lower=$(echo ...)`
 - ✅ **SC2317**: Adicionado comentário explicativo para código "unreachable" em exit/return dual usage
 
-#### Melhorias
+**Melhorias**
 
 - Documentação clara de variáveis carregadas de `.env`
 - Tratamento adequado de uso dual (script/source)
 
 ### 3. create-vrf.sh
 
-#### Correções Críticas
+**Correções Críticas**
 
 - ✅ **SC2162**: Adicionado flag `-r` em todos os comandos `read`
   - Antes: `read -p "..."`
@@ -68,14 +68,14 @@ seguindo os padrões estabelecidos em `AGENTS.md`.
   - `aoscx vlan "${VRF_VLAN}"`
 - ✅ **SC1091**: Adicionado `# shellcheck disable` para source de `aruba_auth.sh`
 
-#### Melhorias
+**Melhorias**
 
 - Proteção contra backslash em inputs do usuário
 - Prevenção de word splitting em comandos
 
 ### 4. verify-setup.sh
 
-#### Correções Críticas
+**Correções Críticas**
 
 - ✅ **SC2292**: Substituído `[ ]` por `[[ ]]` em todos os testes
 - ✅ **SC2250**: Padronizado uso de `${var}` em todas as variáveis
@@ -83,14 +83,14 @@ seguindo os padrões estabelecidos em `AGENTS.md`.
   - Antes: `cat file | tail -n 3`
   - Depois: `tail -n 3 file`
 
-#### Melhorias
+**Melhorias**
 
 - Uso de testes Bash modernos `[[ ]]`
 - Citações consistentes em variáveis
 
 ### 5. run-tests.sh
 
-#### Correções Críticas
+**Correções Críticas**
 
 - ✅ **SC2292**: Substituído `[ ]` por `[[ ]]`
 - ✅ **SC2250**: Padronizado `${var}` em todas as variáveis
@@ -98,7 +98,7 @@ seguindo os padrões estabelecidos em `AGENTS.md`.
   - Antes: `if [ $? -eq 0 ]`
   - Depois: Salvando em variável e testando: `exit_code=$?` + `if [[ ${exit_code} -eq 0 ]]`
 
-#### Melhorias
+**Melhorias**
 
 - Captura explícita de códigos de saída
 - Citações duplas em todas as variáveis

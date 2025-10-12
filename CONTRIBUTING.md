@@ -4,14 +4,14 @@ Obrigado por considerar contribuir para o projeto **Morpheus Aruba Tasks**! Este
 
 ## 📋 Índice
 
-- [Código de Conduta](#código-de-conduta)
-- [Como Começar](#como-começar)
-- [Ambiente de Desenvolvimento](#ambiente-de-desenvolvimento)
-- [Padrões de Código](#padrões-de-código)
-- [Processo de Contribuição](#processo-de-contribuição)
-- [Validação e Testes](#validação-e-testes)
-- [Convenções de Commit](#convenções-de-commit)
-- [Revisão de Código](#revisão-de-código)
+- Código de Conduta
+- Como Começar
+- Ambiente de Desenvolvimento
+- Padrões de Código
+- Processo de Contribuição
+- Validação e Testes
+- Convenções de Commit
+- Revisão de Código
 
 ## 📜 Código de Conduta
 
@@ -262,7 +262,7 @@ pre-commit run --all-files
 
 ### 4. Commit suas Alterações
 
-Siga as [Convenções de Commit](#convenções-de-commit):
+Siga as Convenções de Commit:
 
 ```bash
 git add .
@@ -349,7 +349,7 @@ Seguimos [Conventional Commits](https://www.conventionalcommits.org/). Veja [`CO
 
 ### Formato
 
-```
+```text
 <tipo>(<escopo>): <descrição>
 
 [corpo opcional]
@@ -414,11 +414,11 @@ Ao reportar bugs, inclua:
 1. **Descrição clara** do problema
 2. **Passos para reproduzir**:
 
-   ```
-   1. Execute comando X
-   2. Configure Y
-   3. Observe erro Z
-   ```
+  ```text
+  1. Execute comando X
+  2. Configure Y
+  3. Observe erro Z
+  ```
 
 3. **Comportamento esperado**
 4. **Comportamento atual**

@@ -1,8 +1,8 @@
-# Aider AI - Configuração e Uso
+# Aider — Configuração e Uso (AI Powered)
 
 ## Visão Geral
 
-Este DevContainer está configurado para usar o **Aider AI**, uma ferramenta de programação assistida por IA que utiliza o GitHub Copilot como backend LLM.
+Este DevContainer está configurado para oferecer um fluxo de trabalho AI Powered: Aider (CLI/REPL) para assistênca interativa no terminal, e GitHub Copilot como assistente integrado ao editor. A configuração já disponibiliza variáveis e integrações necessárias para usar ambos de forma segura no container.
 
 ## Configuração
 
@@ -18,10 +18,10 @@ O ambiente está pré-configurado com as seguintes variáveis:
 
 ### Pré-requisitos
 
-Para que o Aider funcione corretamente com o GitHub Copilot, você precisa:
+Para usar Aider e Copilot no devcontainer você precisa:
 
 1. **GitHub Copilot ativo** na sua conta GitHub
-2. **Token de autenticação do GitHub** (`GITHUB_TOKEN`) configurado
+2. **Token de autenticação do GitHub** (`GITHUB_TOKEN`) configurado no ambiente (o Dev Container já tenta expor `gh` token automaticamente quando possível)
 
 #### Como obter o GITHUB_TOKEN
 

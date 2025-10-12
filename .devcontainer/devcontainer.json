@@ -46,7 +46,9 @@
         "ms-azuretools.vscode-docker",
         "ms-vscode-remote.remote-containers",
         "jetmartin.bats",
-        "kherring.bats-test-runner"
+        "kherring.bats-test-runner",
+        "lakshmikanthayyadevara.githooks",
+        "ArshdeepSingh.toggle-terminal-through-status-bar"
       ],
       "settings": {
         // Shellcheck
@@ -97,6 +99,19 @@
         // Terminal
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.scrollback": 10000,
+
+        // GitHub Copilot - Custom Instructions
+        "github.copilot.advanced": {
+          "debug.overrideEngine": "gpt-4",
+          "debug.useNodeFetcher": true
+        },
+        "github.copilot.enable": {
+          "*": true,
+          "yaml": true,
+          "plaintext": true,
+          "markdown": true,
+          "shellscript": true
+        },
 
         // File Associations
         "[shellscript]": {

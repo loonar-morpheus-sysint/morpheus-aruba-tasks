@@ -45,44 +45,57 @@ check_tool "pip" "pip3" "--version"
 # Instala Aider AI
 echo ""
 echo "🤖 Instalando Aider AI..."
-if pip3 install --quiet aider-install 2>/dev/null; then
+if pip3 install --quiet aider-chat 2>/dev/null; then
   echo "✅ Aider instalado com sucesso"
 else
   echo "❌ Falha ao instalar Aider"
 fi
 
 # Continua verificação de ferramentas Python
-check_tool "pylint" "pylint" "--version"
-check_tool "flake8" "flake8" "--version"
-check_tool "black" "black" "--version"
-check_tool "mypy" "mypy" "--version"
-check_tool "bandit" "bandit" "--version"
-check_tool "pytest" "pytest" "--version"
-check_tool "Aider AI" "aider" "--version"
+check_tool "pylint" "pylint" "--version" || true
+check_tool "flake8" "flake8" "--version" || true
+check_tool "black" "black" "--version" || true
+check_tool "mypy" "mypy" "--version" || true
+check_tool "bandit" "bandit" "--version" || true
+check_tool "pytest" "pytest" "--version" || true
+check_tool "Aider AI" "aider" "--version" || true
 
 # Node.js Ecosystem
 echo ""
 echo "📦 Ecossistema Node.js:"
-check_tool "Node.js" "node" "--version"
-check_tool "npm" "npm" "--version"
-check_tool "markdownlint" "markdownlint" "--version"
-check_tool "prettier" "prettier" "--version"
-check_tool "typescript" "tsc" "--version"
+check_tool "Node.js" "node" "--version" || true
+check_tool "npm" "npm" "--version" || true
+check_tool "markdownlint" "markdownlint" "--version" || true
+check_tool "prettier" "prettier" "--version" || true
+check_tool "typescript" "tsc" "--version" || true
 
 # Bash Development
 echo ""
 echo "🐚 Ferramentas Bash:"
-check_tool "shellcheck" "shellcheck" "--version"
-check_tool "shfmt" "shfmt" "--version"
-check_tool "yamllint" "yamllint" "--version"
-check_tool "bash-language-server" "bash-language-server" "--version"
+check_tool "shellcheck" "shellcheck" "--version" || true
+check_tool "shfmt" "shfmt" "--version" || true
+check_tool "BATS" "bats" "--version" || true
+check_tool "yamllint" "yamllint" "--version" || true
+check_tool "bash-language-server" "bash-language-server" "--version" || true
+
+# File Monitoring (necessário para watch-agents.sh)
+if ! command -v inotifywait &> /dev/null; then
+  echo ""
+  echo "📦 Instalando inotify-tools..."
+  if sudo apt-get update -qq && sudo apt-get install -y -qq inotify-tools; then
+    echo "✅ inotify-tools instalado com sucesso"
+  else
+    echo "⚠️  Falha ao instalar inotify-tools"
+  fi
+fi
+check_tool "inotifywait" "inotifywait" "--help" || true
 
 # Security & Quality
 echo ""
 echo "🔒 Ferramentas de Segurança e Qualidade:"
-check_tool "pre-commit" "pre-commit" "--version"
-check_tool "detect-secrets" "detect-secrets" "--version"
-check_tool "ansible-lint" "ansible-lint" "--version"
+check_tool "pre-commit" "pre-commit" "--version" || true
+check_tool "detect-secrets" "detect-secrets" "--version" || true
+check_tool "ansible-lint" "ansible-lint" "--version" || true
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -167,6 +180,30 @@ else
   echo "   💡 Execute: pip3 install aider-install"
 fi
 
+# Iniciar watcher do AGENTS.md em background
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "👁️  Iniciando AGENTS.md Watcher"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if [[ -f "watch-agents.sh" ]]; then
+  # Torna o script executável
+  chmod +x watch-agents.sh
+
+  # Inicia em background
+  if ./watch-agents.sh --background; then
+    echo "✅ AGENTS.md watcher iniciado em background"
+    echo "   📝 Mudanças no AGENTS.md serão detectadas automaticamente"
+    echo "   📄 Copilot instructions serão regeneradas automaticamente"
+    echo "   📊 Para verificar status: ./watch-agents.sh --status"
+    echo "   🛑 Para parar: ./watch-agents.sh --stop"
+  else
+    echo "⚠️  Falha ao iniciar watcher (não crítico)"
+  fi
+else
+  echo "⚠️  Script watch-agents.sh não encontrado"
+fi
+
 echo ""
 echo "🎉 Configuração concluída com sucesso!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -177,6 +214,7 @@ echo "  • Execute 'markdownlint *.md' para validar documentação"
 echo "  • Execute 'pre-commit run --all-files' para validar tudo"
 echo "  • Use 'gh' para interagir com GitHub"
 echo "  • Use 'aider' para desenvolvimento assistido por IA com GitHub Copilot"
+echo "  • O AGENTS.md está sendo monitorado automaticamente! ✨"
 echo ""
 echo "🚀 Pronto para começar o desenvolvimento!"
 echo ""

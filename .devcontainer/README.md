@@ -153,7 +153,7 @@ markdownlint *.md
 markdownlint --fix *.md
 ```
 
-#### Python
+#### Python (verification)
 
 ```bash
 # Verificar código com pylint
@@ -224,7 +224,7 @@ gh pr list
 - Path: `/usr/bin/shfmt`
 - Flags: `-i 2 -ci -bn`
 
-### Python
+### Python (configuration)
 
 - Interpreter: `/usr/bin/python3`
 - Linting: pylint, flake8

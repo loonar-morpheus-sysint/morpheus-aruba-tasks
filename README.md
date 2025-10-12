@@ -9,7 +9,11 @@
 
 Repositório de scripts em Bash para automatização de tarefas administrativas em switches Aruba da HPE. Esses scripts são projetados para serem executados como tarefas no Morpheus Data, permitindo a criação de itens no catálogo de aplicações de autoatendimento.
 
-## 🚀 Início Rápido com Dev Container
+Este repositório é AI Powered — inclui configurações e integrações para assistência de código e terminal (GitHub Copilot e Aider) diretamente no Dev Container.
+
+## 🚀 Dev Container (inclui integrações AI)
+
+O Dev Container do projeto contém um ambiente pronto para desenvolvimento com suporte para assistência de código e terminal (AI Powered). Ao abrir o workspace no VS Code o container é construído com ferramentas, extensões e configurações para GitHub Copilot e Aider.
 
 ### Pré-requisitos
 
@@ -36,13 +40,20 @@ code .
 3. Quando solicitado, clique em "Reopen in Container" ou use o comando:
    - `Ctrl+Shift+P` → "Dev Containers: Reopen in Container"
 
-O container será construído automaticamente com todas as ferramentas instaladas.
+O container será construído automaticamente com as ferramentas e integrações listadas abaixo. Ele já inclui configurações para fornecer suporte AI (GitHub Copilot + Aider) sem configuração adicional.
 
-## 🤖 AI-Assisted Development with Aider
+### Ferramentas e extensões incluídas
 
-Este projeto está configurado para usar o **Aider AI**, uma ferramenta de desenvolvimento assistido por IA que utiliza o GitHub Copilot como backend.
+- Extensões VS Code: Shellcheck, Bash Debug, Markdownlint, GitHub Copilot, GitHub Copilot Chat, GitHub Actions, YAML
+- CLI Tools: shellcheck, markdownlint, yamllint, detect-secrets, pre-commit, gh (GitHub CLI)
+- Watcher/automation: `watch-agents.sh`, `generate-copilot-instructions.sh` (regeneram instruções Copilot a partir de `AGENTS.md`)
 
-### Início Rápido com Aider
+### Aider & Copilot — papéis
+
+- GitHub Copilot: assistente de código integrado ao editor (sugestões e completions)
+- Aider: ferramenta AI de linha de comando / REPL para workflows de refatoração e geração de código com contexto do projeto
+
+### Iniciar Aider (opcional)
 
 ```bash
 # Validar instalação
@@ -55,11 +66,7 @@ aider
 aider AGENTS.md commons.sh
 ```
 
-### Documentação
-
-- **Quick Start**: [AIDER_QUICKSTART.md](./AIDER_QUICKSTART.md)
-- **Setup Completo**: [AIDER_SETUP.md](./AIDER_SETUP.md)
-- **Padrões do Projeto**: [AGENTS.md](./AGENTS.md)
+Documentação do Aider: [AIDER_QUICKSTART.md](./AIDER_QUICKSTART.md) | [AIDER_SETUP.md](./AIDER_SETUP.md)
 
 ## ✅ Validações Automáticas
 
@@ -130,6 +137,79 @@ Consulte [AGENTS.md](./AGENTS.md) para diretrizes completas de desenvolvimento.
 Consulte [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) para padrões de mensagens de commit.
 
 Consulte [TESTING.md](./TESTING.md) para configuração e execução de testes automatizados.
+
+Consulte [WATCHER.md](./WATCHER.md) para configuração do monitoramento automático do AGENTS.md.
+
+Consulte [COPILOT_INTEGRATION.md](./COPILOT_INTEGRATION.md) para detalhes sobre a integração com GitHub Copilot.
+
+## 🤖 GitHub Copilot - Instruções Customizadas
+
+O projeto está configurado para fornecer **instruções customizadas automaticamente** ao GitHub Copilot.
+
+### Funcionamento da Integração
+
+1. 📝 Você edita `AGENTS.md` (padrões do projeto em português)
+2. 🔍 Watcher detecta a mudança automaticamente
+3. 🌍 Script traduz o conteúdo para inglês
+4. 📄 Gera `.github/copilot-instructions.md` (lido automaticamente pelo Copilot)
+5. ✨ GitHub Copilot passa a seguir os padrões do projeto!
+
+### Benefícios
+
+✅ **Código consistente**: Copilot gera código seguindo AGENTS.md
+✅ **Zero configuração**: Funciona automaticamente no devcontainer
+✅ **Sempre atualizado**: Mudanças em AGENTS.md refletem em ~5 segundos
+✅ **Nomenclatura correta**: Variáveis em português, kebab-case para arquivos
+✅ **Estrutura obrigatória**: Headers, logging, main function
+
+### Testar
+
+```bash
+# Verificar arquivo de instruções
+ls -lh .github/copilot-instructions.md
+
+# Ver quando foi atualizado
+stat .github/copilot-instructions.md
+
+# Perguntar ao Copilot sobre o projeto
+# No VS Code: Ctrl+Shift+P → "Copilot Chat"
+# Pergunta: "What are the naming conventions for this project?"
+```
+
+Para mais detalhes, consulte [COPILOT_INTEGRATION.md](./COPILOT_INTEGRATION.md).
+
+## 👁️ AGENTS.md File Watcher (Automático)
+
+O projeto inclui um **file watcher** que monitora automaticamente mudanças no arquivo `AGENTS.md` e regenera as instruções do GitHub Copilot.
+
+### Como Funciona
+
+Quando você edita e salva o `AGENTS.md`:
+
+1. 🔍 O watcher detecta a mudança instantaneamente
+2. ⏱️ Aguarda 2 segundos (debounce) para estabilizar
+3. 🔄 Executa `generate-copilot-instructions.sh` automaticamente
+4. ✅ Atualiza `copilot-codegen-instructions.json` com novo conteúdo traduzido
+
+### Comandos Úteis
+
+```bash
+# Verificar status
+./watch-agents.sh --status
+
+# Ver logs em tempo real
+tail -f logs/watch-agents.log
+
+# Parar watcher (se necessário)
+./watch-agents.sh --stop
+
+# Reiniciar watcher
+./watch-agents.sh --background
+```
+
+**Nota:** O watcher é iniciado **automaticamente** quando o devcontainer é criado. Você não precisa fazer nada!
+
+Para mais detalhes, consulte [WATCHER.md](./WATCHER.md).
 
 **Checklist antes de commit**:
 

@@ -64,6 +64,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/commons.sh"
 - **Locais**: `minúsculas_com_underscore`
 - **Exemplos**: `ARUBA_HOST`, `CONFIG_PATH`, `backup_file`
 
+**IMPORTANTE - Nomenclatura em Inglês**:
+
+- **OBRIGATÓRIO**: Use sempre nomes de variáveis em português
+- **PRIORIDADE**: Legibilidade sobre concisão
+- **Exemplos corretos**: `arquivo_configuracao`, `CAMINHO_BACKUP`, `lista_dispositivos`
+- **Exemplos incorretos**: `cfg_file`, `BKPATH`, `devlist`
+
 ## Padrão de Logging
 
 ### Logging Obrigatório em Funções
@@ -165,6 +172,8 @@ fi
 5. **SEMPRE** use nomenclatura com hífens para arquivos
 6. **SEMPRE** valide dependências com `command -v` antes de usar
 7. **SEMPRE** valide parâmetros e variáveis de ambiente
+8. **SEMPRE** use nomes de variáveis em inglês (priorize legibilidade sobre concisão)
+9. **SEMPRE** Variáveis globais devem sempre ser em MAIÚSCULA e variáveis locais em minúsculas. Palavras separadas com underscores.
 
 ### Checklist de Qualidade (Validação BATS)
 
@@ -176,6 +185,7 @@ fi
 - [ ] Cabeçalho contém `# Description: ...` (formato exato)
 - [ ] Shebang correto: `#!/bin/bash` ou `#!/usr/bin/env bash`
 - [ ] Script usa `source.*commons.sh`
+- [ ] Script tem função `main()` implementada. Exceto o commons.sh
 - [ ] Nome do arquivo segue padrão kebab-case (`nome-com-hifens.sh`)
 - [ ] Script é executável (`chmod +x`)
 
