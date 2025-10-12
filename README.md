@@ -113,74 +113,99 @@ Todas as validações são executadas automaticamente no GitHub Actions para:
 
 ## 🛠️ Ferramentas Instaladas no Dev Container
 
-### Extensões VS Code
+### Tecnologias e Ferramentas do DevContainer
 
-#### Desenvolvimento Shell/Bash
+#### Sistemas e Runtimes
 
-- **Shellcheck**: Linting para Bash
-- **Bash Debug**: Debugging de scripts Bash
-- **Shell Format**: Formatação automática de scripts
-- **Bash IDE**: IDE features para Bash
+- **Git** (latest)
+- **GitHub CLI** (latest)
+- **Docker-in-Docker**
+- **Node.js 20.x LTS**
+- **npm** (latest)
+- **Python 3.12** (devcontainer usa 3.11, mas ambiente inclui 3.12)
+- **pip** (latest)
+- **venv**
 
-#### Desenvolvimento Python
+#### Ferramentas Bash/Shell
 
-- **Python**: Suporte Python completo
-- **Pylance**: Language server Python de alta performance
-- **Pylint**: Integração pylint
-- **Flake8**: Integração flake8
-- **Black Formatter**: Formatação automática
-- **Python Debugger**: Debugging Python
+- **shellcheck**
+- **shfmt**
+- **bats**
+- **bash-language-server**
 
-#### Markdown e Documentação
+#### Ferramentas Python
 
-- **Markdownlint**: Validação de Markdown
-- **Markdown All in One**: Ferramentas completas para Markdown
-- **Markdown Preview GitHub Styles**: Preview estilo GitHub
-- **Markdown Notebook**: Notebooks Markdown
+- **pylint**
+- **flake8**
+- **black**
+- **autopep8**
+- **mypy**
+- **bandit**
+- **safety**
+- **pytest**
+- **pytest-cov**
+- **ipython**
+- **ansible**
+- **ansible-lint**
 
-#### Git e GitHub
+#### Ferramentas Node.js
 
-- **GitHub Pull Requests**: Gerenciamento de PRs
-- **GitHub Actions**: Suporte para workflows
-- **GitLens**: Recursos avançados Git
-- **Git History**: Visualização de histórico Git
-- **Git Hooks**: Gerenciamento de hooks
+- **markdownlint-cli**
+- **markdownlint-cli2**
+- **prettier**
+- **eslint**
+- **typescript**
 
-#### AI Assistants
+#### Ferramentas de Qualidade e Segurança
 
-- **GitHub Copilot**: Assistente de código IA
-- **GitHub Copilot Chat**: Chat com IA para programação
+- **pre-commit**
+- **detect-secrets**
+- **yamllint**
 
-#### Qualidade e Formatação
+#### Utilitários
 
-- **EditorConfig**: Suporte EditorConfig
-- **Prettier**: Formatação de código
-- **Error Lens**: Destaque de erros inline
-- **Code Spell Checker**: Verificador ortográfico
+- **jq**, **curl**, **wget**, **vim**, **nano**
 
-#### Utilitários e Produtividade
+#### Extensões VS Code
 
-- **Better Comments**: Comentários categorizados
-- **TODO Highlight**: Destaque de TODOs
-- **TODO Tree**: Visualização em árvore de TODOs
-- **Toggle Terminal**: Controle de terminal na status bar
+- **Shellcheck** (`timonwong.shellcheck`)
+- **Bash Debug** (`rogalmic.bash-debug`)
+- **Shell Format** (`foxundermoon.shell-format`)
+- **Bash IDE** (`mads-hartmann.bash-ide-vscode`)
+- **Python** (`ms-python.python`)
+- **Pylance** (`ms-python.vscode-pylance`)
+- **Pylint** (`ms-python.pylint`)
+- **Flake8** (`ms-python.flake8`)
+- **Black Formatter** (`ms-python.black-formatter`)
+- **Python Debugger** (`ms-python.debugpy`)
+- **Markdownlint** (`davidanson.vscode-markdownlint`)
+- **Markdown All in One** (`yzhang.markdown-all-in-one`)
+- **Markdown Preview GitHub Styles** (`bierner.markdown-preview-github-styles`)
+- **Markdown Notebook** (`ms-vscode.vscode-markdown-notebook`)
+- **GitHub Pull Requests** (`github.vscode-pull-request-github`)
+- **GitHub Actions** (`github.vscode-github-actions`)
+- **GitLens** (`eamodio.gitlens`)
+- **Git History** (`donjayamanne.githistory`)
+- **Git Hooks** (`lakshmikanthayyadevara.githooks`)
+- **GitHub Copilot** (`github.copilot`)
+- **GitHub Copilot Chat** (`github.copilot-chat`)
+- **EditorConfig** (`editorconfig.editorconfig`)
+- **Prettier** (`esbenp.prettier-vscode`)
+- **Error Lens** (`usernamehw.errorlens`)
+- **Code Spell Checker** (`streetsidesoftware.code-spell-checker`)
+- **Better Comments** (`aaron-bond.better-comments`)
+- **TODO Highlight** (`wayou.vscode-todo-highlight`)
+- **TODO Tree** (`gruntfuggly.todo-tree`)
+- **Toggle Terminal** (`ArshdeepSingh.toggle-terminal-through-status-bar`)
+- **Docker** (`ms-azuretools.vscode-docker`)
+- **Remote Containers** (`ms-vscode-remote.remote-containers`)
+- **YAML** (`redhat.vscode-yaml`)
+- **XML** (`redhat.vscode-xml`)
+- **BATS** (`jetmartin.bats`)
+- **BATS Test Runner** (`kherring.bats-test-runner`)
+- **Ivy** (`zombiezen.ivy`)
 
-#### DevOps e Containers
-
-- **Docker**: Suporte Docker
-- **Remote Containers**: Desenvolvimento em containers
-- **YAML**: Suporte para YAML
-- **XML**: Suporte para XML
-
-#### Testes e Segurança
-
-- **BATS**: Suporte para testes BATS
-- **BATS Test Runner**: Execução de testes BATS
-- **Snyk Security**: Scanner de vulnerabilidades
-
-#### Outros
-
-- **Ivy**: Ferramenta adicional de produtividade
+> Consulte `.devcontainer/devcontainer.json` para a lista completa e versões.
 
 ### CLI Tools
 
