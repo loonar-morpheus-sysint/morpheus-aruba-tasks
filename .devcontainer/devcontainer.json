@@ -48,7 +48,9 @@
         "jetmartin.bats",
         "kherring.bats-test-runner",
         "lakshmikanthayyadevara.githooks",
-        "ArshdeepSingh.toggle-terminal-through-status-bar"
+        "ArshdeepSingh.toggle-terminal-through-status-bar",
+        "ms-vscode.vscode-markdown-notebook",
+        "zombiezen.ivy"
       ],
       "settings": {
         // Shellcheck

@@ -45,10 +45,11 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | Nome | Versão | Fonte | Descrição | Website | Licença |
 |------|--------|-------|-----------|---------|---------|
 | Bash | 5.x+ | Ubuntu | Shell Unix e linguagem de script | [Site](https://www.gnu.org/software/bash/) | GPL-3.0 |
-| Python | 3.12 | PPA deadsnakes | Linguagem de programação de alto nível | [Site](https://www.python.org/) | PSF License |
+| Python | 3.11 | DevContainer Feature | Linguagem de programação de alto nível | [Site](https://www.python.org/) | PSF License |
 | Node.js | 20.x LTS | Nodesource | Runtime JavaScript baseado em V8 | [Site](https://nodejs.org/) | MIT |
 | npm | latest | Node.js | Gerenciador de pacotes Node.js | [Site](https://www.npmjs.com/) | Artistic-2.0 |
 | pip | latest | Python | Gerenciador de pacotes Python | [Site](https://pip.pypa.io/) | MIT |
+| pipx | latest | apt | Gerenciador de aplicações Python isoladas | [Site](https://pypa.github.io/pipx/) | MIT |
 
 ---
 
@@ -61,6 +62,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | docker | latest | Feature | Plataforma de containerização | [Site](https://www.docker.com/) | Apache-2.0 |
 | shellcheck | latest | apt | Analisador estático para scripts Shell | [Site](https://www.shellcheck.net/) | GPL-3.0 |
 | shfmt | latest | apt | Formatador de scripts Shell | [GitHub](https://github.com/mvdan/sh) | BSD-3-Clause |
+| bats | latest | apt | Framework de testes para Bash | [GitHub](https://github.com/bats-core/bats-core) | MIT |
 | yamllint | latest | apt | Validador e linter para YAML | [GitHub](https://github.com/adrienverge/yamllint) | GPL-3.0 |
 | curl | latest | apt | Transferência de dados via URL | [Site](https://curl.se/) | MIT-like |
 | wget | latest | apt | Download de arquivos | [Site](https://www.gnu.org/software/wget/) | GPL-3.0 |
@@ -200,6 +202,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | davidanson.vscode-markdownlint | markdownlint | Validação de Markdown | MIT |
 | yzhang.markdown-all-in-one | Markdown All in One | Ferramentas completas para Markdown | MIT |
 | bierner.markdown-preview-github-styles | Markdown Preview GitHub Styles | Preview estilo GitHub | MIT |
+| ms-vscode.vscode-markdown-notebook | Markdown Notebook | Notebooks Markdown | Proprietário Microsoft |
 
 ### Git e GitHub
 
@@ -235,8 +238,18 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | streetsidesoftware.code-spell-checker | Code Spell Checker | Verificador ortográfico | GPL-3.0 |
 | wayou.vscode-todo-highlight | TODO Highlight | Destaque de TODOs e FIXMEs | MIT |
 | gruntfuggly.todo-tree | TODO Tree | Visualização em árvore de TODOs | MIT |
+| ArshdeepSingh.toggle-terminal-through-status-bar | Toggle Terminal | Controle de terminal na status bar | MIT |
+| zombiezen.ivy | Ivy | Ferramenta de produtividade | MIT |
 
-### Segurança (Node)
+### Testes e DevOps
+
+| ID da Extensão | Nome | Descrição | Licença |
+|----------------|------|-----------|---------|
+| jetmartin.bats | BATS | Suporte para framework de testes BATS | MIT |
+| kherring.bats-test-runner | BATS Test Runner | Execução de testes BATS no VS Code | MIT |
+| lakshmikanthayyadevara.githooks | Git Hooks | Gerenciamento de Git hooks | MIT |
+
+### Segurança
 
 | ID da Extensão | Nome | Descrição | Licença |
 |----------------|------|-----------|---------|
@@ -258,6 +271,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | ghcr.io/devcontainers/features/github-cli:1 | latest | GitHub CLI (gh) | [Docs](https://github.com/devcontainers/features) | MIT |
 | ghcr.io/devcontainers/features/git:1 | latest | Git com PPA para última versão | [Docs](https://github.com/devcontainers/features) | MIT |
 | ghcr.io/devcontainers/features/docker-in-docker:2 | latest | Docker dentro do container | [Docs](https://github.com/devcontainers/features) | MIT |
+| ghcr.io/devcontainers/features/python:1 | 3.11 | Python 3.11 com ferramentas | [Docs](https://github.com/devcontainers/features) | MIT |
 
 ---
 
@@ -289,16 +303,16 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 
 | Categoria | Quantidade | Principais |
 |-----------|------------|-----------|
-| Linguagens e Runtimes | 5 | Bash, Python 3.12, Node.js 20 LTS |
-| CLIs Core | 11 | git, gh, docker, shellcheck, shfmt |
+| Linguagens e Runtimes | 5 | Bash, Python 3.11, Node.js 20 LTS |
+| CLIs Core | 12 | git, gh, docker, shellcheck, shfmt, bats |
 | Pacotes Python | 19 | pylint, black, pytest, ansible, pre-commit |
 | Pacotes Node.js | 6 | markdownlint-cli, prettier, typescript |
 | Utilitários Sistema | 8 | build-essential, curl, jq, vim |
-| Extensões VS Code | 31 | 4 Bash, 6 Python, 3 Markdown, 4 Git, 2 AI |
-| DevContainer Features | 3 | GitHub CLI, Git, Docker-in-Docker |
+| Extensões VS Code | 36 | 4 Bash, 6 Python, 4 Markdown, 5 Git, 2 AI, 3 Testes |
+| DevContainer Features | 4 | GitHub CLI, Git, Docker-in-Docker, Python |
 | Padrões | 7 | POSIX, PEP 8, Conventional Commits |
 | Serviços Externos | 3 | ExplainShell, Nodesource, Deadsnakes |
-| **Total** | **93** | - |
+| **Total** | **100** | - |
 
 ---
 

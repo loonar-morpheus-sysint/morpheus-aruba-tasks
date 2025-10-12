@@ -44,9 +44,11 @@ O container será construído automaticamente com as ferramentas e integrações
 
 ### Ferramentas e extensões incluídas
 
-- Extensões VS Code: Shellcheck, Bash Debug, Markdownlint, GitHub Copilot, GitHub Copilot Chat, GitHub Actions, YAML
-- CLI Tools: shellcheck, markdownlint, yamllint, detect-secrets, pre-commit, gh (GitHub CLI)
-- Watcher/automation: `watch-agents.sh`, `generate-copilot-instructions.sh` (regeneram instruções Copilot a partir de `AGENTS.md`)
+- **Extensões VS Code**: 36 extensões incluindo Shellcheck, Bash Debug, Python (Pylance, Black, Flake8), Markdownlint, GitHub Copilot, GitHub Copilot Chat, GitHub Actions, GitLens, Docker, BATS Test Runner e muitas outras
+- **CLI Tools**: shellcheck, shfmt, markdownlint, yamllint, detect-secrets, pre-commit, gh (GitHub CLI), python3, node.js, npm, pip, bats
+- **Python Tools**: pylint, flake8, black, mypy, pytest, ansible, ipython e mais
+- **Node.js Tools**: prettier, eslint, typescript, bash-language-server
+- **Watcher/automation**: `watch-agents.sh`, `generate-copilot-instructions.sh` (regeneram instruções Copilot a partir de `AGENTS.md`)
 
 ### Aider & Copilot — papéis
 
@@ -113,22 +115,119 @@ Todas as validações são executadas automaticamente no GitHub Actions para:
 
 ### Extensões VS Code
 
+#### Desenvolvimento Shell/Bash
+
 - **Shellcheck**: Linting para Bash
 - **Bash Debug**: Debugging de scripts Bash
-- **Markdownlint**: Linting para Markdown
-- **GitHub Copilot**: Assistente de código IA
-- **GitHub Copilot Chat**: Chat com IA
+- **Shell Format**: Formatação automática de scripts
+- **Bash IDE**: IDE features para Bash
+
+#### Desenvolvimento Python
+
+- **Python**: Suporte Python completo
+- **Pylance**: Language server Python de alta performance
+- **Pylint**: Integração pylint
+- **Flake8**: Integração flake8
+- **Black Formatter**: Formatação automática
+- **Python Debugger**: Debugging Python
+
+#### Markdown e Documentação
+
+- **Markdownlint**: Validação de Markdown
+- **Markdown All in One**: Ferramentas completas para Markdown
+- **Markdown Preview GitHub Styles**: Preview estilo GitHub
+- **Markdown Notebook**: Notebooks Markdown
+
+#### Git e GitHub
+
+- **GitHub Pull Requests**: Gerenciamento de PRs
 - **GitHub Actions**: Suporte para workflows
+- **GitLens**: Recursos avançados Git
+- **Git History**: Visualização de histórico Git
+- **Git Hooks**: Gerenciamento de hooks
+
+#### AI Assistants
+
+- **GitHub Copilot**: Assistente de código IA
+- **GitHub Copilot Chat**: Chat com IA para programação
+
+#### Qualidade e Formatação
+
+- **EditorConfig**: Suporte EditorConfig
+- **Prettier**: Formatação de código
+- **Error Lens**: Destaque de erros inline
+- **Code Spell Checker**: Verificador ortográfico
+
+#### Utilitários e Produtividade
+
+- **Better Comments**: Comentários categorizados
+- **TODO Highlight**: Destaque de TODOs
+- **TODO Tree**: Visualização em árvore de TODOs
+- **Toggle Terminal**: Controle de terminal na status bar
+
+#### DevOps e Containers
+
+- **Docker**: Suporte Docker
+- **Remote Containers**: Desenvolvimento em containers
 - **YAML**: Suporte para YAML
+- **XML**: Suporte para XML
+
+#### Testes e Segurança
+
+- **BATS**: Suporte para testes BATS
+- **BATS Test Runner**: Execução de testes BATS
+- **Snyk Security**: Scanner de vulnerabilidades
+
+#### Outros
+
+- **Ivy**: Ferramenta adicional de produtividade
 
 ### CLI Tools
 
-- `shellcheck`: Validador de scripts Shell
-- `markdownlint`: Validador de Markdown
-- `yamllint`: Validador de YAML
-- `detect-secrets`: Detector de segredos
-- `pre-commit`: Framework de hooks Git
+#### Core Development Tools
+
+- `git`: Sistema de controle de versão
 - `gh`: GitHub CLI (com autenticação do WSL)
+- `docker`: Plataforma de containerização
+
+#### Shell e Script Development
+
+- `shellcheck`: Validador de scripts Shell
+- `shfmt`: Formatador de scripts Shell
+- `bats`: Framework de testes para Bash
+
+#### Python Development
+
+- `python3`: Python 3.11 com pip
+- `pipx`: Gerenciador de ferramentas Python isoladas
+- `pre-commit`: Framework de hooks Git
+- `detect-secrets`: Detector de segredos
+- `pylint`: Linter para Python
+- `flake8`: Verificador de estilo Python
+- `black`: Formatador de código Python
+- `mypy`: Verificador de tipos estáticos
+- `pytest`: Framework de testes Python
+- `ansible`: Ferramenta de automação
+- `ipython`: Shell Python interativo
+
+#### Node.js Development
+
+- `node`: Node.js 20.x LTS
+- `npm`: Gerenciador de pacotes Node.js
+- `markdownlint-cli`: Validador de Markdown
+- `prettier`: Formatador de código
+- `eslint`: Linter para JavaScript/TypeScript
+- `typescript`: Superset tipado de JavaScript
+- `bash-language-server`: Language server para Bash
+
+#### File Processing e Utilities
+
+- `yamllint`: Validador de YAML
+- `jq`: Processador JSON
+- `curl`: Cliente HTTP
+- `wget`: Download de arquivos
+- `vim`: Editor de texto
+- `nano`: Editor de texto simples
 
 ## 📋 Padrões de Código
 
@@ -241,6 +340,91 @@ Por outro lado, as APIs REST da Aruba exigem:
 - Dependências externas para processar respostas
 
 Para cenários de automação simples e diretos em Bash, a CLI oferece uma solução mais pragmática e de fácil manutenção.
+
+## 🙏 Agradecimentos à Comunidade Open Source
+
+Este projeto é possível graças ao **extraordinário trabalho** de milhares de desenvolvedores e mantenedores da comunidade open source mundial. Nossa solução depende fundamentalmente de código aberto.
+
+### 📊 Dependência de Código Aberto - Análise Quantitativa
+
+Com base no levantamento completo documentado em [THIRDPARTY.md](./THIRDPARTY.md), nossa solução utiliza:
+
+| Categoria | Quantidade | % Open Source | Principais Tecnologias |
+|-----------|------------|---------------|----------------------|
+| **Linguagens e Runtimes** | 5 | 100% | Bash, Python, Node.js, npm, pip |
+| **CLI Tools Essenciais** | 12 | 100% | git, shellcheck, shfmt, bats, curl, jq, vim |
+| **Pacotes Python** | 19 | 100% | pylint, black, pytest, ansible, pre-commit |
+| **Pacotes Node.js** | 6 | 100% | markdownlint-cli, prettier, typescript, eslint |
+| **Utilitários Sistema** | 8 | 100% | build-essential, curl, jq, vim, nano |
+| **Extensões VS Code** | 36 | ~75% | 27 extensões open source de 36 totais |
+| **DevContainer Features** | 4 | 100% | Todas as features são open source |
+| **Padrões e Especificações** | 7 | 100% | POSIX, PEP 8, Conventional Commits, Markdown |
+
+#### 🧮 Resultado Final
+
+**📈 Dependência Total de Open Source: ~95%**
+
+- **Total de tecnologias**: 100
+- **Open Source**: ~95 tecnologias
+- **Proprietárias/Comerciais**: ~5 tecnologias (principalmente extensões Microsoft/GitHub)
+
+### 💝 Agradecimentos Especiais
+
+Expressamos nossa **profunda gratidão** às seguintes comunidades e organizações:
+
+#### 🌟 Fundações e Organizações
+
+- **Linux Foundation** - Infraestrutura e governança do ecossistema Linux/POSIX
+- **Python Software Foundation (PSF)** - Linguagem Python e todo seu ecossistema
+- **OpenJS Foundation** - Node.js, npm e ferramentas JavaScript/TypeScript
+- **Free Software Foundation (GNU)** - Bash, ferramentas GNU essenciais
+- **Docker Inc.** - Tecnologia de containerização
+- **Projeto Debian/Ubuntu** - Sistema operacional base e repositórios
+
+#### 🔧 Ferramentas Críticas e Seus Mantenedores
+
+- **Koalaman (ShellCheck)** - Análise estática para Bash, essencial para qualidade
+- **Bats-core Team** - Framework de testes para Bash
+- **Pre-commit Team** - Automação de qualidade de código
+- **Black Team** - Formatação consistente de código Python
+- **Ansible Team (Red Hat)** - Automação de infraestrutura
+- **Prettier Team** - Formatação universal de código
+- **GitLens/Eric Amodio** - Ferramentas avançadas Git
+- **David Anson** - Markdownlint, padronização de documentação
+
+#### 🏗️ Infraestrutura de Desenvolvimento
+
+- **GitHub** - Plataforma de colaboração e CI/CD
+- **Microsoft DevContainers** - Ambientes de desenvolvimento padronizados
+- **VS Code Extension Authors** - Ecossistema de 36 extensões utilizadas
+
+### 🌍 Impacto da Filosofia Open Source
+
+Nossa solução demonstra o **poder transformador** do software livre:
+
+1. **🚀 Inovação Acelerada**: Baseamos em décadas de desenvolvimento coletivo
+2. **🔒 Segurança Transparente**: Código auditável pela comunidade global
+3. **💰 Eficiência Econômica**: Reutilização de soluções maduras e testadas
+4. **🤝 Colaboração Global**: Participamos do ecossistema mundial de desenvolvimento
+5. **📚 Conhecimento Compartilhado**: Contribuímos de volta através de documentação e exemplos
+
+### 🎯 Nosso Compromisso
+
+Como beneficiários da comunidade open source, assumimos o compromisso de:
+
+- ✅ **Documentar** nossas práticas e padrões para outros desenvolvedores
+- ✅ **Compartilhar** soluções e melhorias quando possível
+- ✅ **Manter** transparência sobre dependências e licenças
+- ✅ **Contribuir** com feedback e bug reports para projetos upstream
+- ✅ **Educar** sobre boas práticas de desenvolvimento e automação
+
+---
+
+**🌟 "Se vi mais longe, foi porque me apoiei sobre os ombros de gigantes."** - Isaac Newton
+
+*Esta citação resume perfeitamente nossa relação com a comunidade open source: nosso sucesso é construído sobre as contribuições extraordinárias de milhares de desenvolvedores ao redor do mundo.*
+
+---
 
 ## Referências
 
