@@ -23,8 +23,8 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 
 | Nome | Versão | Descrição | Website | Licença |
 |------|--------|-----------|---------|---------|
-| HPE Aruba Networking | AOS-CX 10.13 | Solução de switching de rede da HPE | [Site](https://www.arubanetworks.com/) | Proprietário HPE |
-| Aruba CLI | AOS-CX | Command Line Interface para switches Aruba | [Docs](https://www.arubanetworks.com/techdocs/AOS-CX/10.13/HTML/cli_reference/) | Proprietário HPE |
+| HPE Aruba Networking | AOS-CX 10.16 | Solução de switching de rede da HPE | [Site](https://www.arubanetworks.com/) | Proprietário HPE |
+| Aruba CLI | AOS-CX | Command Line Interface para switches Aruba | [Docs]([https://www.arubanetworks.com/techdocs/AOS-CX/10.13/HTML/cli_reference/](https://arubanetworking.hpe.com/techdocs/AOS-CX/10.16/PDF/cli_10000.pdf)) | Proprietário HPE |
 | Aruba REST API | AOS-CX | API REST para automação de switches | [Docs](https://www.arubanetworks.com/techdocs/AOS-CX/10.13/HTML/rest_api_guide/) | Proprietário HPE |
 
 ---
