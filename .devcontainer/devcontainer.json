@@ -6,7 +6,7 @@
   },
   "containerEnv": {
     "OPENAI_API_BASE": "https://api.githubcopilot.com",
-    "OPENAI_API_KEY": "${localEnv:GITHUB_TOKEN}",
+    "OPENAI_API_KEY": "${localEnv:GITHUB_TOKEN:-}",
     "AIDER_MODEL": "gpt-4",
     "AIDER_AUTO_COMMITS": "false",
     "AIDER_DARK_MODE": "true"
@@ -138,11 +138,10 @@
     }
   },
   "mounts": [
-    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+    // Os mounts condicionais são configurados no post-create.sh
+    // para evitar erros quando os diretórios não existem
   ],
-  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postCreateCommand": "bash .devcontainer/post-create.sh && pip3 install --user aider-chat",
   "remoteUser": "vscode",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {

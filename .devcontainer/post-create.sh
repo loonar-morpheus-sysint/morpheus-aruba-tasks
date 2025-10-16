@@ -45,8 +45,11 @@ check_tool "pip" "pip3" "--version"
 # Instala Aider AI
 echo ""
 echo "🤖 Instalando Aider AI..."
-if pip3 install --quiet aider-chat 2>/dev/null; then
+if pip3 install --user --quiet aider-chat 2>/dev/null; then
   echo "✅ Aider instalado com sucesso"
+  # Garante que o diretório de binários do usuário está no PATH
+  export PATH="/home/vscode/.local/bin:$PATH"
+  echo "export PATH=\"/home/vscode/.local/bin:\$PATH\"" >> /home/vscode/.bashrc
 else
   echo "❌ Falha ao instalar Aider"
 fi
@@ -127,6 +130,52 @@ if [[ -d "/workspaces/morpheus-aruba-tasks" ]]; then
   chmod +x /workspaces/morpheus-aruba-tasks/*.sh 2>/dev/null || true
   echo "✅ Permissões configuradas para scripts .sh"
 fi
+
+# Configuração do Git e arquivos de configuração
+echo ""
+echo "🔧 Configurando Git e arquivos de configuração..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Tentar copiar configurações do host se existirem
+if [[ -n "${HOST_HOME:-}" ]] && [[ -d "${HOST_HOME}" ]]; then
+  echo "🏠 Detectado diretório home do host: ${HOST_HOME}"
+
+  # Copiar .gitconfig se existir
+  if [[ -f "${HOST_HOME}/.gitconfig" ]]; then
+    cp "${HOST_HOME}/.gitconfig" /home/vscode/.gitconfig
+    chown vscode:vscode /home/vscode/.gitconfig
+    echo "✅ .gitconfig copiado do host"
+  fi
+
+  # Copiar configuração do GitHub CLI se existir
+  if [[ -d "${HOST_HOME}/.config/gh" ]]; then
+    mkdir -p /home/vscode/.config
+    cp -r "${HOST_HOME}/.config/gh" /home/vscode/.config/
+    chown -R vscode:vscode /home/vscode/.config/gh
+    echo "✅ Configuração GitHub CLI copiada do host"
+  fi
+fi
+
+# Configurar Git se não estiver configurado
+if ! git config --global user.name >/dev/null 2>&1; then
+  echo "⚙️  Configurando nome do usuário Git..."
+  git config --global user.name "DevContainer User"
+fi
+
+if ! git config --global user.email >/dev/null 2>&1; then
+  echo "⚙️  Configurando email do usuário Git..."
+  git config --global user.email "user@devcontainer.local"
+fi
+
+# Configurações adicionais do Git para o DevContainer
+git config --global init.defaultBranch main
+git config --global pull.rebase false
+git config --global core.autocrlf input
+
+echo "✅ Git configurado:"
+echo "   Nome: $(git config --global user.name)"
+echo "   Email: $(git config --global user.email)"
+echo "   Branch padrão: $(git config --global init.defaultBranch)"
 
 # Cria diretórios úteis se não existirem
 echo ""

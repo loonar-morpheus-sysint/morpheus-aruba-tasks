@@ -397,6 +397,23 @@ exit 0
 - Aplicar todas as diretrizes sem exceção
 - Priorizar legibilidade e manutenibilidade
 
+### Sincronização de Arquivos Relacionados ao DevContainer
+
+**IMPORTANTE:** Sempre que o arquivo `devcontainer.json` for alterado, todos os arquivos relacionados à configuração do ambiente de desenvolvimento devem ser sincronizados e atualizados conforme necessário. Isso inclui, mas não se limita a:
+
+- `.devcontainer/Dockerfile`
+- `.devcontainer/post-create.sh`
+- `.devcontainer/devcontainer.json`
+- Documentação de setup (`SETUP.md`, `SETUP_SUMMARY.md`)
+- Listas de extensões e features (`THIRDPARTY.md`)
+- Scripts de validação e integração (`validate-aider.sh`, `verify-setup.sh`)
+
+**Diretriz para agentes:**
+
+- Ao modificar o `devcontainer.json`, revise e atualize todos os arquivos que dependem ou documentam a configuração do ambiente.
+- Garanta que instruções, dependências, extensões e features estejam consistentes em todos os pontos do projeto.
+- Sempre documente as mudanças relevantes nos arquivos de referência e instrução.
+
 ## Template Completo de Script
 
 Use este template como base para TODOS os novos scripts:

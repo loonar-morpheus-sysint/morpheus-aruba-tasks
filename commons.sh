@@ -1,4 +1,34 @@
 #!/bin/bash
+
+# Função para logar sucesso
+log_success() {
+    log_message "notice" "SUCCESS" "${GREEN}" "$1"
+}
+# Função para logar entrada de função
+_log_func_enter() {
+    local func_name="$1"
+    log_debug "[ENTER] Função: ${func_name}"
+}
+
+# Função para logar saída OK de função
+_log_func_exit_ok() {
+    local func_name="$1"
+    log_debug "[EXIT OK] Função: ${func_name}"
+}
+
+# Função para logar saída FAIL de função
+_log_func_exit_fail() {
+    local func_name="$1"
+    local code="${2:-1}"
+    log_error "[EXIT FAIL] Função: ${func_name} (code: ${code})"
+}
+
+# Função para logar seção destacada
+log_section() {
+    local section_name="$1"
+    echo -e "\n${YELLOW}========== ${section_name} ==========${NC}\n"
+}
+#!/bin/bash
 # commons.sh - Reusable functions for Aruba CLI installation
 # These functions provide logging, OS detection, dependency management, and installation verification
 
