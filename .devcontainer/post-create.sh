@@ -26,10 +26,10 @@ check_tool() {
 
 echo ""
 echo "📦 Verificando ferramentas instaladas..."
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Core Tools
-echo ""
+check_tool "Git" "git" "--version" || true
+check_tool "GitHub CLI" "gh" "--version" || true
+check_tool "Curl" "curl" "--version" || true
+check_tool "jq" "jq" "--version" || true
 echo "🔨 Ferramentas Core:"
 check_tool "Git" "git" "--version"
 check_tool "GitHub CLI" "gh" "--version"

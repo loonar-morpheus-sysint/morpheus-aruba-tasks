@@ -147,7 +147,7 @@
   // returning 503 for the buildkit/frontend (docker/dockerfile). Remove this
   // `image` entry after the upstream outage is resolved.
   "image": "test-morpheus-aruba:latest",
-  "postCreateCommand": "bash .devcontainer/post-create.sh && pip3 install --user aider-chat",
+  "postCreateCommand": "bash .devcontainer/post-create.sh && pip3 install --user aider-chat || true",
   "remoteUser": "vscode",
   "features": {}
 }
