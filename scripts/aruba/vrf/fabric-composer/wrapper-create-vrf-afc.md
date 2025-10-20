@@ -112,6 +112,26 @@ These files are always removed at the end (EXIT/INT/TERM), using `shred` when av
 - Certificates: if AFC uses an untrusted certificate, the wrapper uses `--insecure` in `curl`
 - `DRY_RUN=true`: the wrapper validates, but `create-vrf-afc.sh` does not apply changes
 
+## APIs Used
+
+- `POST /api/v1/auth/token` — AFC authentication, returns a token
+- `GET /api/v1/fabrics` — List fabrics (used by main script)
+- `POST /api/v1/vrfs` — Create VRF (used by main script)
+- Morpheus Cypher API — Secret retrieval (`cypher.read('AFC_API')`)
+
+## Workflow Diagram
+
+```mermaid
+flowchart TD
+  A[Start Task in Morpheus] --> B[Read Form Inputs]
+  B --> C[Read AFC_API Secret from Cypher]
+  C --> D[Authenticate with AFC /api/v1/auth/token]
+  D --> E[Invoke create-vrf-afc.sh]
+  E --> F[Create VRF via /api/v1/vrfs]
+  F --> G[Securely Remove Token Files]
+  G --> H[End]
+```
+
 ## References
 
 - AFC API Getting Started: <https://developer.arubanetworks.com/afc/docs/getting-started-with-the-afc-api>
