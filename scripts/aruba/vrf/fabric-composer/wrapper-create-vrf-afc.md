@@ -45,6 +45,8 @@ ARUBA_RT_EXPORT="<%=customOptions.ARUBA_RT_EXPORT%>"
 ARUBA_AF="<%=customOptions.ARUBA_AF%>"
 ARUBA_DESCRIPTION="<%=customOptions.ARUBA_DESCRIPTION%>"
 MORPHEUS_DRY_RUN="<%=customOptions.DRY_RUN%>"
+ARUBA_VNI="<%=customOptions.ARUBA_VNI%>"
+ARUBA_SWITCHES="<%=customOptions.ARUBA_SWITCHES%>"
 ```
 
 ## Credentials via Cypher

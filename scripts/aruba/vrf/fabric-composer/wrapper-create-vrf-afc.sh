@@ -270,6 +270,7 @@ Exemplos locais (fora do Morpheus):
     export ARUBA_RT_EXPORT="65000:100"
     export ARUBA_AF="evpn"
     export ARUBA_VNI="5000"
+    export ARUBA_SWITCHES="switch-uuid-1,switch-uuid-2"
     export ARUBA_DESCRIPTION="Production VRF"
     ./wrapper-create-vrf-afc.sh
 EOF
