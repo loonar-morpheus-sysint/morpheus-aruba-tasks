@@ -81,6 +81,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | setuptools | latest | Ferramentas de empacotamento Python | [PyPI](https://pypi.org/project/setuptools/) | MIT |
 | wheel | latest | Formato de distribuição Python | [PyPI](https://pypi.org/project/wheel/) | MIT |
 | ipython | latest | Shell interativo Python avançado | [Site](https://ipython.org/) | BSD-3-Clause |
+| aider-chat | latest | CLI de pair programming com IA (Aider) | [PyPI](https://pypi.org/project/aider-chat/) | Apache-2.0 |
 
 ### Linting e Análise de Código
 
@@ -171,7 +172,11 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | gnupg | latest | GNU Privacy Guard - Criptografia e assinaturas | GPL-3.0 |
 | lsb-release | latest | Informações de distribuição Linux | GPL |
 
----
+### Monitoramento de Arquivos
+
+| Nome | Versão | Descrição | Licença |
+|------|--------|-----------|---------|
+| inotify-tools | latest | Utilitários (inotifywait/inotifywatch) para monitoramento de arquivos e diretórios | GPL-2.0 |
 
 ## 🔌 Extensões VS Code
 
@@ -179,9 +184,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 
 | ID da Extensão | Nome | Descrição | Licença |
 |----------------|------|-----------|---------|
-| timonwong.shellcheck | ShellCheck | Integração shellcheck no VS Code | MIT |
 | rogalmic.bash-debug | Bash Debug | Debugger para scripts Bash | MIT |
-| foxundermoon.shell-format | Shell Format | Formatação de scripts Shell | MIT |
 | mads-hartmann.bash-ide-vscode | Bash IDE | IDE features para Bash | MIT |
 
 ### Desenvolvimento Python
@@ -240,6 +243,7 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 | gruntfuggly.todo-tree | TODO Tree | Visualização em árvore de TODOs | MIT |
 | ArshdeepSingh.toggle-terminal-through-status-bar | Toggle Terminal | Controle de terminal na status bar | MIT |
 | zombiezen.ivy | Ivy | Ferramenta de produtividade | MIT |
+| piotrpalarz.vscode-gitignore-generator | .gitignore Generator | Gera/atualiza .gitignore via gitignore.io | MIT |
 
 ### Testes e DevOps
 
@@ -305,14 +309,14 @@ utilizados ou mencionados no projeto **Morpheus Aruba Tasks**.
 |-----------|------------|-----------|
 | Linguagens e Runtimes | 5 | Bash, Python 3.11, Node.js 20 LTS |
 | CLIs Core | 12 | git, gh, docker, shellcheck, shfmt, bats |
-| Pacotes Python | 19 | pylint, black, pytest, ansible, pre-commit |
+| Pacotes Python | 20 | pylint, black, pytest, ansible, pre-commit, aider-chat |
 | Pacotes Node.js | 6 | markdownlint-cli, prettier, typescript |
-| Utilitários Sistema | 8 | build-essential, curl, jq, vim |
-| Extensões VS Code | 36 | 4 Bash, 6 Python, 4 Markdown, 5 Git, 2 AI, 3 Testes |
+| Utilitários Sistema | 9 | build-essential, curl, jq, inotify-tools |
+| Extensões VS Code | 37 | 4 Bash, 6 Python, 4 Markdown, 5 Git, 2 AI, 3 Testes |
 | DevContainer Features | 4 | GitHub CLI, Git, Docker-in-Docker, Python |
 | Padrões | 7 | POSIX, PEP 8, Conventional Commits |
 | Serviços Externos | 3 | ExplainShell, Nodesource, Deadsnakes |
-| **Total** | **100** | - |
+| **Total** | **103** | - |
 
 ---
 
@@ -390,9 +394,9 @@ Agradecemos especialmente às comunidades:
 
 ---
 
-**Última atualização**: 2025-10-11
+**Última atualização**: 2025-10-20
 
-**Versão do documento**: 2.0.0
+**Versão do documento**: 2.1.0
 
 **Mantido por**: Equipe Morpheus Aruba Tasks
 

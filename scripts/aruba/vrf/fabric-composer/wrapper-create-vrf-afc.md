@@ -51,7 +51,7 @@ Create a secret in Morpheus Cypher named `AFC_API` containing JSON in the format
 ```json
 {
   "username": "<USER>",
-  "password": "<PASSWORD>", <!-- pragma: allowlist secret -->
+  "password": "<PASSWORD>",
   "URL": "https://<AFC URL>/"
 }
 ```

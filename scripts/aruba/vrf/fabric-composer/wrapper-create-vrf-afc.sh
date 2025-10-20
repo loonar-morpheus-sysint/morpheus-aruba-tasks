@@ -21,7 +21,9 @@ ARUBA_FABRIC="<%=customOptions.ARUBA_FABRIC%>"
 ARUBA_RD="<%=customOptions.ARUBA_RD%>"
 ARUBA_RT_IMPORT="<%=customOptions.ARUBA_RT_IMPORT%>"
 ARUBA_RT_EXPORT="<%=customOptions.ARUBA_RT_EXPORT%>"
-ARUBA_AF="<%=customOptions.ARUBA_AF%>" # ipv4, ipv6 ou ambos (ex: "ipv4,ipv6")
+ARUBA_AF="<%=customOptions.ARUBA_AF%>" # ipv4, ipv6, evpn (default: ipv4)
+ARUBA_VNI="<%=customOptions.ARUBA_VNI%>" # L2/L3 VPN VNI (1-16777214)
+ARUBA_SWITCHES="<%=customOptions.ARUBA_SWITCHES%>" # Comma-separated switch UUIDs (optional)
 ARUBA_DESCRIPTION="<%=customOptions.ARUBA_DESCRIPTION%>"
 MORPHEUS_DRY_RUN="<%=customOptions.DRY_RUN%>" # true/false (opcional)
 
@@ -223,10 +225,14 @@ run_create_vrf() {
     fi
 
     local args=("--name" "${ARUBA_VRF_NAME}" "--fabric" "${ARUBA_FABRIC}")
+
+    # Add optional parameters only if provided
     [[ -n "${ARUBA_RD}" && "${ARUBA_RD}" != "<%=customOptions.ARUBA_RD%>" ]] && args+=("--rd" "${ARUBA_RD}")
     [[ -n "${ARUBA_RT_IMPORT}" && "${ARUBA_RT_IMPORT}" != "<%=customOptions.ARUBA_RT_IMPORT%>" ]] && args+=("--rt-import" "${ARUBA_RT_IMPORT}")
     [[ -n "${ARUBA_RT_EXPORT}" && "${ARUBA_RT_EXPORT}" != "<%=customOptions.ARUBA_RT_EXPORT%>" ]] && args+=("--rt-export" "${ARUBA_RT_EXPORT}")
     [[ -n "${ARUBA_AF}" && "${ARUBA_AF}" != "<%=customOptions.ARUBA_AF%>" ]] && args+=("--af" "${ARUBA_AF}")
+    [[ -n "${ARUBA_VNI}" && "${ARUBA_VNI}" != "<%=customOptions.ARUBA_VNI%>" ]] && args+=("--vni" "${ARUBA_VNI}")
+    [[ -n "${ARUBA_SWITCHES}" && "${ARUBA_SWITCHES}" != "<%=customOptions.ARUBA_SWITCHES%>" ]] && args+=("--switches" "${ARUBA_SWITCHES}")
     [[ -n "${ARUBA_DESCRIPTION}" && "${ARUBA_DESCRIPTION}" != "<%=customOptions.ARUBA_DESCRIPTION%>" ]] && args+=("--description" "${ARUBA_DESCRIPTION}")
 
     local dry
@@ -249,9 +255,22 @@ run_create_vrf() {
 show_examples() {
     cat << 'EOF'
 Exemplos locais (fora do Morpheus):
+    # Exemplo básico
     export AFC_API_JSON='{"username":"admin","password":"Aruba123!","URL":"https://172.31.8.99/"}' # pragma: allowlist secret
     export ARUBA_VRF_NAME="MY-VRF"
     export ARUBA_FABRIC="fabric1"
+    ./wrapper-create-vrf-afc.sh
+
+    # Exemplo completo com todos os parâmetros
+    export AFC_API_JSON='{"username":"admin","password":"Aruba123!","URL":"https://172.31.8.99/"}' # pragma: allowlist secret
+    export ARUBA_VRF_NAME="PROD-VRF"
+    export ARUBA_FABRIC="dc1-fabric"
+    export ARUBA_RD="65000:100"
+    export ARUBA_RT_IMPORT="65000:100"
+    export ARUBA_RT_EXPORT="65000:100"
+    export ARUBA_AF="evpn"
+    export ARUBA_VNI="5000"
+    export ARUBA_DESCRIPTION="Production VRF"
     ./wrapper-create-vrf-afc.sh
 EOF
 }

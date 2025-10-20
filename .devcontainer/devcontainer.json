@@ -48,7 +48,8 @@
         "lakshmikanthayyadevara.githooks",
         "ArshdeepSingh.toggle-terminal-through-status-bar",
         "ms-vscode.vscode-markdown-notebook",
-        "zombiezen.ivy"
+        "zombiezen.ivy",
+        "piotrpalarz.vscode-gitignore-generator"
       ],
       "settings": {
         // Shellcheck
