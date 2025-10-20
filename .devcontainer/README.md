@@ -6,17 +6,30 @@ Este DevContainer fornece um ambiente de desenvolvimento completo e consistente 
 
 ## 🛠️ Ferramentas Instaladas
 
+### DevContainer Features
+
+Conforme documentado em `../THIRDPARTY.md`, as seguintes features são instaladas automaticamente:
+
+- **GitHub CLI (gh)** - `ghcr.io/devcontainers/features/github-cli:1` (latest)
+- **Git com PPA** - `ghcr.io/devcontainers/features/git:1` (latest, sempre atualizado)
+- **Docker-in-Docker** - `ghcr.io/devcontainers/features/docker-in-docker:2` (latest)
+- **Python 3.11** - `ghcr.io/devcontainers/features/python:1` (versão 3.11 com ferramentas)
+
 ### Core Development
 
-- **Git** (latest) - Controle de versão
-- **GitHub CLI** (latest) - Interação com GitHub via linha de comando
-- **Docker-in-Docker** - Suporte para containers dentro do DevContainer
+- **Git** (latest via PPA) - Controle de versão
+- **GitHub CLI** (latest via feature) - Interação com GitHub via linha de comando
+- **Docker** - Suporte para containers dentro do DevContainer (Docker-in-Docker)
+- **curl**, **wget** - Download de arquivos
+- **jq** - Processador JSON de linha de comando
+- **vim**, **nano** - Editores de texto
 
-### Python Ecosystem (v3.12)
+### Python Ecosystem (v3.11+)
 
-- **Python 3.12** - Última versão estável do Python
+- **Python 3.11** - Última versão estável do Python
 - **pip** - Gerenciador de pacotes Python (latest)
 - **venv** - Ambiente virtual Python
+- **pipx** - Gerenciador de aplicações Python isoladas
 
 #### Ferramentas de Qualidade Python
 
@@ -54,7 +67,10 @@ Este DevContainer fornece um ambiente de desenvolvimento completo e consistente 
 
 - **shellcheck** - Análise estática de scripts Bash
 - **shfmt** - Formatador de scripts Shell
+- **bats** - Framework de testes para Bash
 - **yamllint** - Validação de arquivos YAML
+- **inotify-tools** - Monitoramento de arquivos (para watch-agents.sh)
+- **bash-language-server** - Language server para Bash (via npm)
 
 ### Security & Quality
 
@@ -232,11 +248,83 @@ gh pr list
 
 ## 🔄 Montagens
 
-O DevContainer monta automaticamente:
+O DevContainer monta automaticamente os seguintes diretórios do host para compartilhar configurações e autenticações:
 
-- `~/.gitconfig` - Configuração Git do host
-- `~/.config/gh` - Configuração GitHub CLI do host
-- `~/.ssh` - Chaves SSH do host (para autenticação Git)
+### Configurações Compartilhadas
+
+| Origem (Host/WSL) | Destino (Container) | Descrição | Modo |
+|-------------------|---------------------|-----------|------|
+| `~/.config/gh` | `/home/vscode/.config/gh` | Autenticação GitHub CLI | Leitura/Escrita |
+| `~/.gitconfig` | `/home/vscode/.gitconfig` | Configuração Git global | Leitura/Escrita |
+| `~/.ssh` | `/home/vscode/.ssh` | Chaves SSH | Somente Leitura |
+
+### Benefícios
+
+- **GitHub CLI**: Use `gh` no container com a mesma autenticação da WSL/host
+- **Git**: Commits usam seu nome e email configurados no host
+- **SSH**: Acesse repositórios privados com suas chaves SSH existentes
+
+### Como Funciona
+
+Os mounts usam variáveis de ambiente que funcionam tanto em Linux/WSL quanto Windows:
+
+```jsonc
+"mounts": [
+  // ${localEnv:HOME} para Linux/macOS/WSL
+  // ${localEnv:USERPROFILE} para Windows
+  "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh,target=/home/vscode/.config/gh,type=bind"
+]
+```
+
+### Validar Compartilhamento
+
+Após abrir o DevContainer, execute:
+
+```bash
+# Verificar GitHub CLI
+gh auth status
+# Deve mostrar sua autenticação da WSL/host
+
+# Verificar Git
+git config --global user.name
+git config --global user.email
+# Deve mostrar suas configurações do host
+
+# Verificar chaves SSH
+ls -la ~/.ssh/
+# Deve listar suas chaves do host
+```
+
+### Troubleshooting: Autenticação não Compartilhada
+
+**Problema**: `gh auth status` retorna erro ou pede autenticação
+
+**Possíveis causas**:
+
+1. **Diretório não existe no host**: Certifique-se que `~/.config/gh` existe na WSL
+
+   ```bash
+   # Na WSL, verificar:
+   ls -la ~/.config/gh
+   ```
+
+2. **Permissões incorretas**: Rebuild o container
+
+   ```text
+   Dev Containers: Rebuild Container
+   ```
+
+3. **Caminho diferente no Windows**: O mount usa tanto `$HOME` (Linux/WSL) quanto `$USERPROFILE` (Windows)
+
+**Solução alternativa - Autenticar manualmente no container**:
+
+```bash
+# Dentro do DevContainer
+gh auth login
+# Escolha: GitHub.com > HTTPS > Login via navegador
+```
+
+## 🔄 Montagens (Legado)
 
 ## 📂 Estrutura de Diretórios
 
@@ -248,6 +336,31 @@ Após a criação do container, os seguintes diretórios são criados:
 - `configs/` - Arquivos de configuração
 
 ## 🐛 Troubleshooting
+
+### GitHub CLI não encontrado após rebuild
+
+**Problema**: `❌ GitHub CLI não encontrado` mesmo após rebuild
+
+**Solução**:
+
+1. Verifique se as features estão no `devcontainer.json`:
+
+   ```jsonc
+   "features": {
+     "ghcr.io/devcontainers/features/github-cli:1": {
+       "version": "latest"
+     }
+   }
+   ```
+
+2. Reconstrua sem cache: `F1` → `Dev Containers: Rebuild Container Without Cache`
+
+3. Verifique a instalação manualmente no container:
+
+   ```bash
+   which gh
+   gh --version
+   ```
 
 ### Container não inicia
 

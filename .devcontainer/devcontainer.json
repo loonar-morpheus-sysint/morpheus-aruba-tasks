@@ -1,9 +1,5 @@
 {
   "name": "Morpheus Aruba Tasks Development",
-  // Temporary: use a locally-built image to avoid Docker Hub outage for
-  // `docker/dockerfile` frontend. Restore the `build` block after the
-  // outage is resolved.
-
   "containerEnv": {
     "DOCKER_BUILDKIT": "1",
     "OPENAI_API_BASE": "https://api.githubcopilot.com",
@@ -140,14 +136,34 @@
     }
   },
   "mounts": [
-    // Os mounts condicionais são configurados no post-create.sh
-    // para evitar erros quando os diretórios não existem
+    // Compartilha autenticação do GitHub CLI da WSL/host
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached",
+    // Compartilha configuração do Git
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    // Compartilha chaves SSH (somente leitura por segurança)
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached,readonly"
   ],
-  // NOTE: Temporary workaround — use a locally built image when Docker Hub is
-  // returning 503 for the buildkit/frontend (docker/dockerfile). Remove this
-  // `image` entry after the upstream outage is resolved.
-  "image": "test-morpheus-aruba:latest",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
   "postCreateCommand": "bash .devcontainer/post-create.sh && pip3 install --user aider-chat || true",
   "remoteUser": "vscode",
-  "features": {}
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest",
+      "ppa": true
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": true
+    }
+  }
 }

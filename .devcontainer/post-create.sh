@@ -80,17 +80,6 @@ check_tool "shfmt" "shfmt" "--version" || true
 check_tool "BATS" "bats" "--version" || true
 check_tool "yamllint" "yamllint" "--version" || true
 check_tool "bash-language-server" "bash-language-server" "--version" || true
-
-# File Monitoring (necessário para watch-agents.sh)
-if ! command -v inotifywait &> /dev/null; then
-  echo ""
-  echo "📦 Instalando inotify-tools..."
-  if sudo apt-get update -qq && sudo apt-get install -y -qq inotify-tools; then
-    echo "✅ inotify-tools instalado com sucesso"
-  else
-    echo "⚠️  Falha ao instalar inotify-tools"
-  fi
-fi
 check_tool "inotifywait" "inotifywait" "--help" || true
 
 # Security & Quality
@@ -136,46 +125,62 @@ echo ""
 echo "🔧 Configurando Git e arquivos de configuração..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Tentar copiar configurações do host se existirem
-if [[ -n "${HOST_HOME:-}" ]] && [[ -d "${HOST_HOME}" ]]; then
-  echo "🏠 Detectado diretório home do host: ${HOST_HOME}"
-
-  # Copiar .gitconfig se existir
-  if [[ -f "${HOST_HOME}/.gitconfig" ]]; then
-    cp "${HOST_HOME}/.gitconfig" /home/vscode/.gitconfig
-    chown vscode:vscode /home/vscode/.gitconfig
-    echo "✅ .gitconfig copiado do host"
+# Verificar se .gitconfig foi montado do host
+if [[ -f /home/vscode/.gitconfig ]]; then
+  echo "✅ .gitconfig montado do host"
+  echo "   Nome: $(git config --global user.name 2>/dev/null || echo 'Não configurado')"
+  echo "   Email: $(git config --global user.email 2>/dev/null || echo 'Não configurado')"
+else
+  echo "⚠️  .gitconfig não encontrado, configurando valores padrão..."
+  # Configurar Git se não estiver configurado
+  if ! git config --global user.name >/dev/null 2>&1; then
+    echo "⚙️  Configurando nome do usuário Git..."
+    git config --global user.name "DevContainer User"
   fi
 
-  # Copiar configuração do GitHub CLI se existir
-  if [[ -d "${HOST_HOME}/.config/gh" ]]; then
-    mkdir -p /home/vscode/.config
-    cp -r "${HOST_HOME}/.config/gh" /home/vscode/.config/
-    chown -R vscode:vscode /home/vscode/.config/gh
-    echo "✅ Configuração GitHub CLI copiada do host"
+  if ! git config --global user.email >/dev/null 2>&1; then
+    echo "⚙️  Configurando email do usuário Git..."
+    git config --global user.email "user@devcontainer.local"
   fi
+
+  echo "✅ Git configurado:"
+  echo "   Nome: $(git config --global user.name)"
+  echo "   Email: $(git config --global user.email)"
 fi
 
-# Configurar Git se não estiver configurado
-if ! git config --global user.name >/dev/null 2>&1; then
-  echo "⚙️  Configurando nome do usuário Git..."
-  git config --global user.name "DevContainer User"
+# Verificar se configuração do GitHub CLI foi montada
+if [[ -d /home/vscode/.config/gh ]]; then
+  echo "✅ Configuração GitHub CLI montada do host"
+
+  # Verificar autenticação
+  if gh auth status &>/dev/null; then
+    echo "✅ GitHub CLI autenticado com sucesso"
+    gh auth status 2>&1 | head -n 3 | sed 's/^/   /'
+  else
+    echo "⚠️  GitHub CLI configurado mas não autenticado"
+    echo "   💡 Execute: gh auth login"
+  fi
+else
+  echo "⚠️  Configuração GitHub CLI não montada"
+  echo "   💡 Para compartilhar autenticação da WSL/host, adicione ao devcontainer.json:"
+  echo "   \"mounts\": [\"source=\${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind\"]"
 fi
 
-if ! git config --global user.email >/dev/null 2>&1; then
-  echo "⚙️  Configurando email do usuário Git..."
-  git config --global user.email "user@devcontainer.local"
+# Verificar chaves SSH
+if [[ -d /home/vscode/.ssh ]] && [[ -n "$(ls -A /home/vscode/.ssh 2>/dev/null)" ]]; then
+  echo "✅ Chaves SSH montadas do host"
+  echo "   Chaves disponíveis:"
+  ls -1 /home/vscode/.ssh/*.pub 2>/dev/null | sed 's|/home/vscode/.ssh/||' | sed 's/^/   - /' || echo "   (nenhuma chave pública encontrada)"
+else
+  echo "⚠️  Chaves SSH não montadas ou diretório vazio"
 fi
 
 # Configurações adicionais do Git para o DevContainer
-git config --global init.defaultBranch main
-git config --global pull.rebase false
-git config --global core.autocrlf input
-
-echo "✅ Git configurado:"
-echo "   Nome: $(git config --global user.name)"
-echo "   Email: $(git config --global user.email)"
-echo "   Branch padrão: $(git config --global init.defaultBranch)"
+git config --global init.defaultBranch main 2>/dev/null || true
+git config --global pull.rebase false 2>/dev/null || true
+git config --global core.autocrlf input 2>/dev/null || true
+echo "✅ Configurações adicionais do Git aplicadas"
+echo "   Branch padrão: $(git config --global init.defaultBranch 2>/dev/null || echo 'main')"
 
 # Cria diretórios úteis se não existirem
 echo ""
