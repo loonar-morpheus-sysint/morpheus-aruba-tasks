@@ -8,7 +8,46 @@
 
 # Primeira linha funcional: carregar biblioteca comum
 # shellcheck disable=SC1091
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../lib" && pwd)/commons.sh"
+# Resolve path do script de forma segura para evitar "unbound variable" quando
+# executado em ambientes onde BASH_SOURCE não está setado (ex.: sh -c, algumas
+# plataformas de orquestração). Evita também problemas quando $0 é apenas "-c".
+_resolve_script_dir() {
+    # Prefer BASH_SOURCE quando disponível (bash). Use expansão segura para
+    # não failar com set -u.
+    local source_path
+    if [ -n "${BASH_SOURCE-}" ]; then
+        source_path="${BASH_SOURCE[0]}"
+    else
+        source_path="${0}"
+    fi
+
+    # Se o path não for absoluto, tente resolver para um path absoluto.
+    if [[ "${source_path}" != /* ]]; then
+        if [[ "${source_path}" == */* ]]; then
+            source_path="$(pwd)/${source_path}"
+        else
+            # Pode estar no PATH (invocado como comando sem /) - tentar resolver.
+            local resolved
+            resolved=$(command -v -- "${source_path}" 2>/dev/null || true)
+            if [[ -n "${resolved}" ]]; then
+                source_path="${resolved}"
+            else
+                # Fallback conservador: usar PWD
+                source_path="$(pwd)/${source_path}"
+            fi
+        fi
+    fi
+
+    # Melhor resolução de caminhos (symlinks)
+    if command -v readlink >/dev/null 2>&1; then
+        source_path=$(readlink -f -- "${source_path}" 2>/dev/null || echo "${source_path}")
+    fi
+
+    printf '%s' "$(cd "$(dirname "${source_path}")" && pwd)"
+}
+
+SCRIPT_DIR="$(_resolve_script_dir)/../../../../lib"
+source "${SCRIPT_DIR}/commons.sh"
 
 set -euo pipefail
 
@@ -33,7 +72,7 @@ AFC_API_JSON="<%=cypher.read('AFC_API')%>"
 ################################################################################
 # Constantes e arquivos de token (compartilhados com create-vrf-afc.sh)
 ################################################################################
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(_resolve_script_dir)"
 API_VERSION="v1"
 TOKEN_FILE="${SCRIPT_DIR}/.afc_token"
 TOKEN_EXPIRY_FILE="${SCRIPT_DIR}/.afc_token_expiry"
@@ -304,6 +343,6 @@ main() {
 }
 
 # Executa somente quando chamado diretamente
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "$(_resolve_script_dir)" == "$(cd "$(dirname "${0}")" && pwd)" ]]; then
     main "$@"
 fi
