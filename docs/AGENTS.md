@@ -175,6 +175,34 @@ fi
 8. **SEMPRE** use nomes de variáveis em inglês (priorize legibilidade sobre concisão)
 9. **SEMPRE** Variáveis globais devem sempre ser em MAIÚSCULA e variáveis locais em minúsculas. Palavras separadas com underscores.
 
+### Segurança de Credenciais e Tokens
+
+- **OBRIGATÓRIO**: Se o script gerar ou cachear tokens de autenticação (ex.: arquivos `.afc_token` e `.afc_token_expiry`), implemente limpeza segura no término da execução.
+- **Use trap** para garantir remoção em sucesso, erro ou interrupção (EXIT, INT, TERM).
+- **Preferencial**: Utilize `shred` quando disponível para sobrescrever o arquivo antes de apagar.
+
+Exemplo:
+
+```bash
+TOKEN_FILE="${SCRIPT_DIR}/.afc_token"
+TOKEN_EXPIRY_FILE="${SCRIPT_DIR}/.afc_token_expiry"
+
+cleanup_tokens() {
+  _log_func_enter "cleanup_tokens"
+  if [[ -f "${TOKEN_FILE}" ]]; then
+    if command -v shred >/dev/null 2>&1; then
+      shred -u -z -n 1 "${TOKEN_FILE}" 2>/dev/null || rm -f "${TOKEN_FILE}" || true
+    else
+      rm -f "${TOKEN_FILE}" || true
+    fi
+  fi
+  [[ -f "${TOKEN_EXPIRY_FILE}" ]] && rm -f "${TOKEN_EXPIRY_FILE}" || true
+  _log_func_exit_ok "cleanup_tokens"
+}
+
+trap cleanup_tokens EXIT INT TERM
+```
+
 ### Checklist de Qualidade (Validação BATS)
 
 **CRÍTICO**: Os seguintes itens são VALIDADOS AUTOMATICAMENTE pelos testes BATS:

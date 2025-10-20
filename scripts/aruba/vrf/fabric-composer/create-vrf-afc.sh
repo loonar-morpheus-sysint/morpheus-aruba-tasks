@@ -5,49 +5,131 @@
 ################################################################################
 #
 # DETAILED DESCRIPTION:
-#   Creates Virtual Routing and Forwarding (VRF) instances on HPE Aruba
-#   Networking Fabric Composer using the REST API. Supports both interactive
-#   and CI/CD modes with automatic token management and comprehensive error
-#   handling.
+#   Creates and applies Virtual Routing and Forwarding (VRF) instances on HPE
+#   Aruba Networking Fabric Composer using the REST API. The script performs
+#   two main operations:
+#     1. VRF Creation: Defines the VRF with routing parameters
+#     2. VRF Application: Applies the configuration to the fabric
 #
-# ENVIRONMENT VARIABLES:
-#   FABRIC_COMPOSER_IP: IP address or hostname of Fabric Composer
-#   FABRIC_COMPOSER_USERNAME: Username for authentication
-#   FABRIC_COMPOSER_PASSWORD: Password for authentication
-#   FABRIC_COMPOSER_PORT: API port (default: 443)
-#   FABRIC_COMPOSER_PROTOCOL: Protocol (default: https)
-#   TOKEN_REFRESH_MARGIN: Seconds before expiry to refresh (default: 300)
+#   Features:
+#     - Interactive and CI/CD modes
+#     - Automatic token management with refresh (30-min lifetime)
+#     - Dry-run mode for validation before deployment
+#     - Comprehensive error handling and validation
+#     - Support for IPv4, IPv6, or dual-stack VRFs
+#     - Token persistence across invocations
+#
+# ENVIRONMENT VARIABLES (Required):
+#   FABRIC_COMPOSER_IP        IP address or hostname of Fabric Composer
+#   FABRIC_COMPOSER_USERNAME  Username for API authentication
+#   FABRIC_COMPOSER_PASSWORD  Password for API authentication
+#
+# ENVIRONMENT VARIABLES (Optional):
+#   FABRIC_COMPOSER_PORT      API port (default: 443)
+#   FABRIC_COMPOSER_PROTOCOL  Protocol: http or https (default: https)
+#   TOKEN_REFRESH_MARGIN      Seconds before expiry to refresh token (default: 300)
+#
+# TOKEN MANAGEMENT:
+#   The script automatically manages authentication tokens:
+#     - Token cached in: .afc_token
+#     - Expiry tracked in: .afc_token_expiry
+#     - Auto-refresh: 5 minutes before expiration
+#     - Token lifetime: 30 minutes (configurable on AFC)
+#
+# RETURN CODES:
+#   0 - Success (VRF created and applied)
+#   1 - Failure (dependency missing, validation failed, API error, etc.)
 #
 # USAGE:
-#   # Interactive mode
-#   ./create-aruba-vrf.sh
+#   # Interactive mode (prompts for all parameters)
+#   ./create-vrf-afc.sh --interactive
 #
-#   # CI/CD mode with arguments
-#   ./create-aruba-vrf.sh --name MY-VRF --fabric fabric1 --rd 65000:100 \
-#     --rt-import 65000:100 --rt-export 65000:100 --af ipv4 --description "My VRF"
+#   # CI/CD mode with minimal parameters
+#   ./create-vrf-afc.sh --name MY-VRF --fabric fabric1 --rd 65000:100
 #
-#   # Load from .env file
-#   ./create-aruba-vrf.sh --env-file /path/to/.env --name MY-VRF
+#   # CI/CD mode with full configuration
+#   ./create-vrf-afc.sh --name MY-VRF --fabric fabric1 --rd 65000:100 \
+#     --rt-import 65000:100 --rt-export 65000:100 --af ipv4 \
+#     --description "My Production VRF"
 #
-# EXAMPLES:
-#   # Create VRF with minimal parameters
-#   ./create-aruba-vrf.sh --name PROD-VRF --fabric dc1-fabric --rd 65000:100
+#   # Load environment from .env file
+#   ./create-vrf-afc.sh --env-file /path/to/.env --name MY-VRF \
+#     --fabric fabric1 --rd 65000:100
 #
-#   # Create VRF with full configuration
-#   ./create-aruba-vrf.sh \
-#     --name PROD-VRF \
+#   # Dry-run mode (validate without creating)
+#   ./create-vrf-afc.sh --name TEST-VRF --fabric dc1 --rd 65000:100 --dry-run
+#
+# EXAMPLES (not using real secrets):
+#   # Example 1: Simple VRF with IPv4 only
+#   export FABRIC_COMPOSER_IP="<YOUR VALUE>"
+#   export FABRIC_COMPOSER_USERNAME="<YOUR VALUE>"
+#   export FABRIC_COMPOSER_PASSWORD="<YOUR VALUE>" # pragma: allowlist secret
+
+#   ./create-vrf-afc.sh --name PROD-VRF --fabric dc1-fabric --rd 65000:100
+#
+#   # Example 2: Dual-stack VRF with multiple route targets
+#   ./create-vrf-afc.sh \
+#     --name CUSTOMER-A-VRF \
 #     --fabric dc1-fabric \
 #     --rd 65000:100 \
 #     --rt-import "65000:100,65000:200" \
 #     --rt-export "65000:100,65000:200" \
 #     --af "ipv4,ipv6" \
-#     --description "Production VRF for customer XYZ"
+#     --description "Customer A Production VRF"
+#
+#   # Example 3: Using environment file for credentials
+#   cat > /tmp/afc.env << EOF
+#   FABRIC_COMPOSER_IP=10.1.1.100
+#   FABRIC_COMPOSER_USERNAME=admin
+#   FABRIC_COMPOSER_PASSWORD=secret123
+#   FABRIC_COMPOSER_PORT=443
+#   FABRIC_COMPOSER_PROTOCOL=https
+#   EOF
+#   ./create-vrf-afc.sh --env-file /tmp/afc.env \
+#     --name DEV-VRF --fabric dc1 --rd 65000:200
+#
+#   # Example 4: Validate configuration before deployment
+#   ./create-vrf-afc.sh \
+#     --name TEST-VRF \
+#     --fabric dc1 \
+#     --rd 65000:300 \
+#     --rt-import 65000:300 \
+#     --rt-export 65000:300 \
+#     --dry-run
+#
+#   # Example 5: Interactive mode (script prompts for all values)
+#   ./create-vrf-afc.sh --interactive
+#
+# TROUBLESHOOTING:
+#   # Force token refresh (delete cached token)
+#   rm -f .afc_token .afc_token_expiry
+#
+#   # Check token expiration
+#   [ -f .afc_token_expiry ] && date -d "@$(cat .afc_token_expiry)"
+#
+#   # Test API connectivity
+#   curl -k https://${FABRIC_COMPOSER_IP}:443/api/v1/health
+#
+#   # Enable debug logging
+#   export LOG_LEVEL=DEBUG
+#   ./create-vrf-afc.sh --name TEST-VRF --fabric dc1 --rd 65000:100
 #
 # API REFERENCES:
-#   - AFC API Getting Started: https://developer.arubanetworks.com/afc/docs/getting-started-with-the-afc-api
-#   - VRF Documentation: https://arubanetworking.hpe.com/techdocs/AFC/700/Content/afc70olh/add-vrf.htm
-#   - Authentication: https://developer.arubanetworks.com/afc/reference/getapikey-1
-#   - Ansible Collection: https://github.com/aruba/hpeanfc-ansible-collection
+#   - AFC API Getting Started:
+#     https://developer.arubanetworks.com/afc/docs/getting-started-with-the-afc-api
+#   - VRF Documentation:
+#     https://arubanetworking.hpe.com/techdocs/AFC/700/Content/afc70olh/add-vrf.htm
+#   - Authentication API:
+#     https://developer.arubanetworks.com/afc/reference/getapikey-1
+#   - Ansible Collection (reference implementation):
+#     https://github.com/aruba/hpeanfc-ansible-collection
+#
+# NOTES:
+#   - VRF names must contain only alphanumeric characters, dashes, and underscores
+#   - Route Distinguisher format: ASN:NN (e.g., 65000:100)
+#   - Route Targets can be comma-separated for multiple values
+#   - The script creates VRF and applies it in two separate API calls
+#   - If apply step fails, VRF is created but not applied to fabric
 #
 ################################################################################
 

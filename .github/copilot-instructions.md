@@ -28,6 +28,10 @@ Key points (actionable):
   expected to pass `shellcheck`. Markdown is validated with `markdownlint`. The BATS tests
   enforce header, logging and structure rules (see `tests/*.bats`).
 
+- Security: if your script generates/caches auth tokens (e.g., AFC `.afc_token` and
+  `.afc_token_expiry`), ensure secure deletion at the end. Use a trap to delete on EXIT/INT/TERM,
+  and prefer `shred` when available before `rm`.
+
 - Generator: `tools/generate-copilot-instructions.sh` produces this file from `docs/AGENTS.md` and
   `copilot-codegen-instructions.json`. Editing this file directly is temporary — update
   `docs/AGENTS.md` for persistent changes.
