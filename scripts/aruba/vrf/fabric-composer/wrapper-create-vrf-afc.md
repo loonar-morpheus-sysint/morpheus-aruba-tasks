@@ -28,6 +28,9 @@ Optional:
 - `ARUBA_RT_IMPORT` — Route Target Import (e.g.: `65000:100,65000:200`)
 - `ARUBA_RT_EXPORT` — Route Target Export (e.g.: `65000:100,65000:200`)
 - `ARUBA_AF` — Address Family (e.g.: `ipv4`, `ipv6` or `ipv4,ipv6`)
+- `ARUBA_AF` — Address Family (e.g.: `ipv4`, `ipv6` or `evpn`; default: `ipv4`)
+- `ARUBA_VNI` — L2/L3 VPN VNI (1-16777214)
+- `ARUBA_SWITCHES` — Comma-separated switch UUIDs (optional)
 - `ARUBA_DESCRIPTION` — VRF description
 - `DRY_RUN` — `true`/`false` to validate without creating/applying
 
@@ -99,7 +102,9 @@ These files are always removed at the end (EXIT/INT/TERM), using `shred` when av
   - `ARUBA_RD` (text, optional)
   - `ARUBA_RT_IMPORT` (text, optional)
   - `ARUBA_RT_EXPORT` (text, optional)
-  - `ARUBA_AF` (select: `ipv4`, `ipv6`, `ipv4,ipv6`, optional)
+  - `ARUBA_AF` (select: `ipv4`, `ipv6`, `evpn`, optional; default: `ipv4`)
+  - `ARUBA_VNI` (text, optional)
+  - `ARUBA_SWITCHES` (text, optional)
   - `ARUBA_DESCRIPTION` (text, optional)
   - `DRY_RUN` (boolean, optional)
 - Ensure Cypher `AFC_API` is set as per the JSON above
