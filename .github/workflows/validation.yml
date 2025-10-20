@@ -65,7 +65,8 @@ jobs:
       - name: Run BATS tests
         run: |
           echo "🧪 Executando testes BATS..."
-          bats tests/*.bats
+          chmod +x tests/run-tests.sh
+          tests/run-tests.sh
 
       - name: Run markdownlint
         run: |

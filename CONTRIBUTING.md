@@ -96,8 +96,8 @@ npm install -g markdownlint-cli prettier eslint
 - **Formato**: `verbo-substantivo.sh`
 - **Separador**: hífens (`-`)
 - **Exemplos**:
-  - ✅ `create-vrf.sh`
-  - ✅ `install-aruba-cli.sh`
+  - ✅ `scripts/aruba/vrf/create-vrf.sh`
+  - ✅ `scripts/aruba/cli/install-aruba-cli.sh`
   - ✅ `backup-config.sh`
   - ❌ `createVRF.sh`
   - ❌ `create_vrf.sh`

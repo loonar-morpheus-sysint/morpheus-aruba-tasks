@@ -1,6 +1,21 @@
 #!/bin/bash
-# run-tests.sh
-# Script para executar todos os testes BATS do projeto
+################################################################################
+# Script: run-tests.sh
+# Description: Executa todos os testes BATS do projeto
+################################################################################
+#
+# DESCRIÇÃO DETALHADA:
+#   Script principal para executar testes BATS do projeto.
+#   Pode executar todos os testes ou um teste específico.
+#
+# USO:
+#   ./tests/run-tests.sh [arquivo-teste.bats]
+#
+# EXEMPLOS:
+#   ./tests/run-tests.sh                    # Todos os testes
+#   ./tests/run-tests.sh test_aruba-auth.bats  # Teste específico
+#
+################################################################################
 
 set -e
 
@@ -25,8 +40,8 @@ if ! command -v bats &> /dev/null; then
     exit 1
 fi
 
-# Diretório de testes
-TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/tests" && pwd)"
+# Diretório de testes (mesmo diretório deste script)
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ ! -d "${TEST_DIR}" ]]; then
     echo -e "${RED}❌ Diretório de testes não encontrado: ${TEST_DIR}${NC}"
@@ -57,5 +72,5 @@ if [[ ${exit_code} -eq 0 ]]; then
 else
     echo ""
     echo -e "${RED}❌ Alguns testes falharam!${NC}"
-    exit 1
+    exit ${exit_code}
 fi

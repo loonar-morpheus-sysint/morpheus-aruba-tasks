@@ -9,7 +9,8 @@ load test_helper
 
 # Variáveis do script sendo testado
 SCRIPT_NAME="setup-github-token.sh"
-SCRIPT_PATH="${BATS_TEST_DIRNAME}/../${SCRIPT_NAME}"
+# Use project root to reference the script in its structured location
+SCRIPT_PATH="${PROJECT_ROOT}/ai-support/scripts/${SCRIPT_NAME}"
 
 ################################################################################
 # Testes de Estrutura do Script

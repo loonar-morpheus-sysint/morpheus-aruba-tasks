@@ -1,15 +1,17 @@
 {
   "name": "Morpheus Aruba Tasks Development",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
+  // Temporary: use a locally-built image to avoid Docker Hub outage for
+  // `docker/dockerfile` frontend. Restore the `build` block after the
+  // outage is resolved.
+
   "containerEnv": {
+    "DOCKER_BUILDKIT": "1",
     "OPENAI_API_BASE": "https://api.githubcopilot.com",
     "OPENAI_API_KEY": "${localEnv:GITHUB_TOKEN:-}",
     "AIDER_MODEL": "gpt-4",
     "AIDER_AUTO_COMMITS": "false",
-    "AIDER_DARK_MODE": "true"
+    "AIDER_DARK_MODE": "true",
+    "AIDER_CONFIG": "${containerWorkspaceFolder}/ai-support/config/.aider.conf.yml"
   },
   "customizations": {
     "vscode": {
@@ -141,23 +143,11 @@
     // Os mounts condicionais são configurados no post-create.sh
     // para evitar erros quando os diretórios não existem
   ],
+  // NOTE: Temporary workaround — use a locally built image when Docker Hub is
+  // returning 503 for the buildkit/frontend (docker/dockerfile). Remove this
+  // `image` entry after the upstream outage is resolved.
+  "image": "test-morpheus-aruba:latest",
   "postCreateCommand": "bash .devcontainer/post-create.sh && pip3 install --user aider-chat",
   "remoteUser": "vscode",
-  "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/git:1": {
-      "version": "latest",
-      "ppa": true
-    },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.11",
-      "installTools": true,
-      "optimize": true
-    }
-  }
+  "features": {}
 }

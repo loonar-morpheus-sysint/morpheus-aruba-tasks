@@ -205,6 +205,35 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 if command -v aider &> /dev/null; then
   echo "✅ Aider está disponível no PATH"
 
+  # Verifica se o diretório ai-support existe
+  if [[ -d "/workspaces/morpheus-aruba-tasks/ai-support" ]]; then
+    echo "✅ Diretório ai-support/ encontrado"
+
+    # Verifica scripts
+    if [[ -x "/workspaces/morpheus-aruba-tasks/ai-support/scripts/validate-aider.sh" ]]; then
+      echo "✅ Scripts de suporte disponíveis"
+    fi
+
+    # Verifica config
+    if [[ -f "/workspaces/morpheus-aruba-tasks/ai-support/config/.aider.conf.yml" ]]; then
+      echo "✅ Arquivo de configuração encontrado"
+
+      # Cria symlink se não existir
+      if [[ ! -L "/workspaces/morpheus-aruba-tasks/.aider.conf.yml" ]]; then
+        ln -sf /workspaces/morpheus-aruba-tasks/ai-support/config/.aider.conf.yml \
+               /workspaces/morpheus-aruba-tasks/.aider.conf.yml
+        echo "✅ Symlink de configuração criado"
+      fi
+    fi
+
+    # Verifica documentação
+    if [[ -d "/workspaces/morpheus-aruba-tasks/ai-support/docs" ]]; then
+      echo "✅ Documentação disponível em ./ai-support/docs/"
+    fi
+  else
+    echo "⚠️  Diretório ai-support/ não encontrado"
+  fi
+
   # Verifica variáveis de ambiente
   if [[ -n "${OPENAI_API_BASE}" ]]; then
     echo "✅ OPENAI_API_BASE configurado: ${OPENAI_API_BASE}"
@@ -224,9 +253,13 @@ if command -v aider &> /dev/null; then
   else
     echo "⚠️  AIDER_MODEL não configurado (usando padrão)"
   fi
+
+  if [[ -n "${AIDER_CONFIG}" ]]; then
+    echo "✅ AIDER_CONFIG configurado: ${AIDER_CONFIG}"
+  fi
 else
   echo "❌ Aider não está disponível"
-  echo "   💡 Execute: pip3 install aider-install"
+  echo "   💡 Execute: pip3 install aider-chat"
 fi
 
 # Iniciar watcher do AGENTS.md em background
@@ -235,22 +268,22 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "👁️  Iniciando AGENTS.md Watcher"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-if [[ -f "watch-agents.sh" ]]; then
+if [[ -f "tools/watch-agents.sh" ]]; then
   # Torna o script executável
-  chmod +x watch-agents.sh
+  chmod +x tools/watch-agents.sh
 
   # Inicia em background
-  if ./watch-agents.sh --background; then
+  if ./tools/watch-agents.sh --background; then
     echo "✅ AGENTS.md watcher iniciado em background"
     echo "   📝 Mudanças no AGENTS.md serão detectadas automaticamente"
     echo "   📄 Copilot instructions serão regeneradas automaticamente"
-    echo "   📊 Para verificar status: ./watch-agents.sh --status"
-    echo "   🛑 Para parar: ./watch-agents.sh --stop"
+    echo "   📊 Para verificar status: ./tools/watch-agents.sh --status"
+    echo "   🛑 Para parar: ./tools/watch-agents.sh --stop"
   else
     echo "⚠️  Falha ao iniciar watcher (não crítico)"
   fi
 else
-  echo "⚠️  Script watch-agents.sh não encontrado"
+  echo "⚠️  Script tools/watch-agents.sh não encontrado"
 fi
 
 echo ""

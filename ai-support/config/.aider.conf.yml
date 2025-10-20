@@ -1,0 +1,9 @@
+# Configuração otimizada para GitHub Copilot
+model: gpt-4o-mini
+auto-commits: false
+dark-mode: true
+map-tokens: 512
+max-chat-history-tokens: 2000
+no-show-model-warnings: true
+stream: true
+pretty: true

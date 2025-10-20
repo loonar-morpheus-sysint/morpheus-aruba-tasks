@@ -62,13 +62,19 @@ O container será construído automaticamente com as ferramentas e integrações
 ./validate-aider.sh
 
 # Iniciar Aider
-aider
+./aider-start.sh
 
 # Com contexto do projeto
-aider AGENTS.md commons.sh
+./aider-start.sh AGENTS.md commons.sh
 ```
 
-Documentação do Aider: [AIDER_QUICKSTART.md](./AIDER_QUICKSTART.md) | [AIDER_SETUP.md](./AIDER_SETUP.md)
+**Documentação do Aider:**
+
+- [Quick Start](./ai-support/docs/AIDER_QUICKSTART.md)
+- [Setup Completo](./ai-support/docs/AIDER_SETUP.md)
+- [Integração](./ai-support/docs/AIDER_INTEGRATION.md)
+
+**Nota:** Os scripts principais têm symlinks na raiz para facilitar o acesso.
 
 ## ✅ Validações Automáticas
 
@@ -256,15 +262,15 @@ Todas as validações são executadas automaticamente no GitHub Actions para:
 
 ## 📋 Padrões de Código
 
-Consulte [AGENTS.md](./AGENTS.md) para diretrizes completas de desenvolvimento.
+Consulte [AGENTS.md](./docs/AGENTS.md) para diretrizes completas de desenvolvimento.
 
-Consulte [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) para padrões de mensagens de commit.
+Consulte [COMMIT_CONVENTION.md](./docs/COMMIT_CONVENTION.md) para padrões de mensagens de commit.
 
-Consulte [TESTING.md](./TESTING.md) para configuração e execução de testes automatizados.
+Consulte [TESTING.md](./docs/TESTING.md) para configuração e execução de testes automatizados.
 
-Consulte [WATCHER.md](./WATCHER.md) para configuração do monitoramento automático do AGENTS.md.
+Consulte [WATCHER.md](./docs/WATCHER.md) para configuração do monitoramento automático do AGENTS.md.
 
-Consulte [COPILOT_INTEGRATION.md](./COPILOT_INTEGRATION.md) para detalhes sobre a integração com GitHub Copilot.
+Consulte [COPILOT_INTEGRATION.md](./docs/COPILOT_INTEGRATION.md) para detalhes sobre a integração com GitHub Copilot.
 
 ## 🤖 GitHub Copilot - Instruções Customizadas
 
@@ -300,7 +306,7 @@ stat .github/copilot-instructions.md
 # Pergunta: "What are the naming conventions for this project?"
 ```
 
-Para mais detalhes, consulte [COPILOT_INTEGRATION.md](./COPILOT_INTEGRATION.md).
+Para mais detalhes, consulte [COPILOT_INTEGRATION.md](./docs/COPILOT_INTEGRATION.md).
 
 ## 👁️ AGENTS.md File Watcher (Automático)
 
@@ -333,20 +339,20 @@ tail -f logs/watch-agents.log
 
 **Nota:** O watcher é iniciado **automaticamente** quando o devcontainer é criado. Você não precisa fazer nada!
 
-Para mais detalhes, consulte [WATCHER.md](./WATCHER.md).
+Para mais detalhes, consulte [WATCHER.md](./docs/WATCHER.md).
 
 **Checklist antes de commit**:
 
 - [ ] Todos os scripts `.sh` passam no shellcheck
 - [ ] Todos os arquivos `.md` passam no markdownlint
-- [ ] Testes BATS estão passando (execute `./run-tests.sh`)
+- [ ] Testes BATS estão passando (execute `./tests/run-tests.sh`)
 - [ ] Nenhuma credencial está sendo commitada
 - [ ] Mensagem de commit segue padrão semântico (feat:, fix:, docs:, etc.)
 - [ ] Documentação atualizada
 
 ## 🔒 Segurança
 
-Consulte [SECURITY.md](./SECURITY.md) para práticas de segurança e qualidade de código.
+Consulte [SECURITY.md](./docs/SECURITY.md) para práticas de segurança e qualidade de código.
 
 ## Por que CLI em vez de API?
 

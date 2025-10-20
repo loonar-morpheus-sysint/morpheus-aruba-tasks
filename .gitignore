@@ -125,7 +125,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -289,3 +288,11 @@ ai-support/config/.aider.tags.cache.v4/
 # Arquivos de debug
 *.stackdump
 core
+
+# ==============================================================================
+# EXCEÇÕES - Versionamento explícito
+# ==============================================================================
+
+# Permitir versionamento do diretório lib/ na raiz do projeto (commons.sh)
+!/lib/
+!/lib/**

@@ -6,7 +6,7 @@ load test_helper
 
 setup() {
   # Source commons.sh first to get logging functions
-  source "${PROJECT_ROOT}/commons.sh"
+  source "${PROJECT_ROOT}/lib/commons.sh"
   setup_mock_env
 }
 
@@ -15,53 +15,53 @@ teardown() {
 }
 
 @test "aruba-auth.sh: Script file exists and is executable" {
-  [ -f "${PROJECT_ROOT}/aruba-auth.sh" ]
-  [ -x "${PROJECT_ROOT}/aruba-auth.sh" ]
+  [ -f "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh" ]
+  [ -x "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh" ]
 }
 
 @test "aruba-auth.sh: Script has correct shebang" {
-  run head -n 1 "${PROJECT_ROOT}/aruba-auth.sh"
+  run head -n 1 "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [[ "$output" == "#!/bin/bash" ]] || [[ "$output" == "#!/usr/bin/env bash" ]]
 }
 
 @test "aruba-auth.sh: Script sources commons.sh" {
-  run grep -q "source.*commons.sh" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -q "source.*commons.sh" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "aruba-auth.sh: Script contains required functions" {
   # Check for main authentication function
-  run grep -Eq "function.*auth|^[a-z_]+.*\(\).*\{" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -Eq "function.*auth|^[a-z_]+.*\(\).*\{" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "aruba-auth.sh: Script validates required environment variables" {
   # Check if script validates ARUBA_HOST or similar
-  run grep -Eq "ARUBA_HOST|ARUBA_USER|ARUBA_PASSWORD" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -Eq "ARUBA_HOST|ARUBA_USER|ARUBA_PASSWORD" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "aruba-auth.sh: Script has logging statements" {
   # Check for log function calls
-  run grep -E "log_(info|error|success|warning|debug)" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -E "log_(info|error|success|warning|debug)" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "aruba-auth.sh: Script handles errors properly" {
   # Check for error handling
-  run grep -q "return 1\|exit 1" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -q "return 1\|exit 1" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "aruba-auth.sh: Script uses proper exit codes" {
   # Check for return statements
-  run grep -E "return [0-9]" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -E "return [0-9]" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "aruba-auth.sh: Script has proper documentation" {
   # Check for description comments
-  run grep -q "^# Description:\|^# Script:" "${PROJECT_ROOT}/aruba-auth.sh"
+  run grep -q "^# Description:\|^# Script:" "${PROJECT_ROOT}/scripts/aruba/auth/aruba-auth.sh"
   [ "$status" -eq 0 ]
 }
 
