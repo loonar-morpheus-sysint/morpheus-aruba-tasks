@@ -36,9 +36,9 @@
 #     Use false apenas em ambientes de teste ou com certificados auto-assinados.
 #
 # USO DO ARQUIVO .env:
-#   Copie o arquivo .env-sample para .env e preencha com seus valores:
+#   Copie o arquivo .env.example para .env e preencha com seus valores:
 #
-#   cp .env-sample .env
+#   cp .env.example .env
 #
 #   Edite o arquivo .env com suas credenciais:
 #
@@ -89,7 +89,7 @@ load_env_file() {
     if [[ ! -f "${ENV_FILE}" ]]; then
         log_error "Arquivo .env não encontrado: ${ENV_FILE}"
         log_error "Crie um arquivo .env com ARUBA_HOST, ARUBA_USERNAME e ARUBA_PASSWORD"
-        log_error "Você pode copiar .env-sample para .env como ponto de partida"
+        log_error "Você pode copiar .env.example para .env como ponto de partida"
         return 1
     fi
 

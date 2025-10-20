@@ -69,9 +69,10 @@ repos:
     hooks:
       - id: bats-tests
         name: BATS Tests
-        entry: bash -c 'if command -v bats &> /dev/null; then bats tests/*.bats;
-          else echo "BATS não instalado. Execute sudo apt-get install bats"; exit 1; fi'
+        entry:
+          bash -c 'if command -v bats &> /dev/null; then tests/run-tests.sh;
+          else echo "⚠️  BATS não instalado, pulando testes..."; exit 0; fi'
         language: system
         pass_filenames: false
         files: \.(sh|bats)$
-        stages: [pre-commit]
+        stages: [commit]
