@@ -1,36 +1,37 @@
+
 # wrapper-create-vrf-afc.sh
 
-Guia rápido para o wrapper de criação de VRF no HPE Aruba Fabric Composer (AFC) integrado ao Morpheus Data.
+Quick guide for the VRF creation wrapper in HPE Aruba Fabric Composer (AFC) integrated with Morpheus Data.
 
-## Visão geral
+## Overview
 
-O script `wrapper-create-vrf-afc.sh` é um wrapper pensado para ser usado como Task no Morpheus Data. Ele:
+The `wrapper-create-vrf-afc.sh` script is a wrapper designed to be used as a Task in Morpheus Data. It:
 
-- Lê parâmetros de formulário via Groovy Template Syntax (customOptions.*)
-- Obtém credenciais do AFC a partir do Cypher (secret `AFC_API`)
-- Autentica no AFC (gera token temporário)
-- Invoca o script principal `create-vrf-afc.sh` com os argumentos corretos
-- Remove com segurança os arquivos de token ao final da execução (trap com shred quando disponível)
+- Reads form parameters via Groovy Template Syntax (customOptions.*)
+- Retrieves AFC credentials from Cypher (secret `AFC_API`)
+- Authenticates with AFC (generates temporary token)
+- Invokes the main script `create-vrf-afc.sh` with the correct arguments
+- Securely removes token files at the end of execution (trap with shred when available)
 
-## Entradas suportadas (via customOptions)
+## Supported Inputs (via customOptions)
 
-Defina no Form/Options do Morpheus os seguintes campos (nomes exatamente como abaixo):
+Define the following fields in Morpheus Form/Options (names must match exactly):
 
-Obrigatórios:
+Required:
 
-- `ARUBA_VRF_NAME` — Nome da VRF (ex.: PROD-VRF)
-- `ARUBA_FABRIC` — Nome do fabric no AFC (ex.: dc1-fabric)
+- `ARUBA_VRF_NAME` — VRF name (e.g.: PROD-VRF)
+- `ARUBA_FABRIC` — Fabric name in AFC (e.g.: dc1-fabric)
 
-Opcionais:
+Optional:
 
-- `ARUBA_RD` — Route Distinguisher (ex.: 65000:100)
-- `ARUBA_RT_IMPORT` — Route Target Import (ex.: `65000:100,65000:200`)
-- `ARUBA_RT_EXPORT` — Route Target Export (ex.: `65000:100,65000:200`)
-- `ARUBA_AF` — Address Family (ex.: `ipv4`, `ipv6` ou `ipv4,ipv6`)
-- `ARUBA_DESCRIPTION` — Descrição da VRF
-- `DRY_RUN` — `true`/`false` para validar sem criar/aplicar
+- `ARUBA_RD` — Route Distinguisher (e.g.: 65000:100)
+- `ARUBA_RT_IMPORT` — Route Target Import (e.g.: `65000:100,65000:200`)
+- `ARUBA_RT_EXPORT` — Route Target Export (e.g.: `65000:100,65000:200`)
+- `ARUBA_AF` — Address Family (e.g.: `ipv4`, `ipv6` or `ipv4,ipv6`)
+- `ARUBA_DESCRIPTION` — VRF description
+- `DRY_RUN` — `true`/`false` to validate without creating/applying
 
-No corpo do script, estes valores são referenciados assim:
+In the script body, these values are referenced as:
 
 ```bash
 ARUBA_VRF_NAME="<%=customOptions.ARUBA_VRF_NAME%>"
@@ -43,9 +44,9 @@ ARUBA_DESCRIPTION="<%=customOptions.ARUBA_DESCRIPTION%>"
 MORPHEUS_DRY_RUN="<%=customOptions.DRY_RUN%>"
 ```
 
-## Credenciais via Cypher
+## Credentials via Cypher
 
-Crie no Morpheus Cypher um secret chamado `AFC_API` contendo JSON no formato:
+Create a secret in Morpheus Cypher named `AFC_API` containing JSON in the format:
 
 ```json
 {
@@ -55,44 +56,44 @@ Crie no Morpheus Cypher um secret chamado `AFC_API` contendo JSON no formato:
 }
 ```
 
-O wrapper lê este valor com:
+The wrapper reads this value with:
 
 ```bash
 AFC_API_JSON="<%=cypher.read('AFC_API')%>"
 ```
 
-Em seguida, extrai `username`, `password` e `URL`, analisando protocolo, host e porta para exportar as variáveis esperadas pelo script principal (`FABRIC_COMPOSER_USERNAME`, `FABRIC_COMPOSER_PASSWORD`, `FABRIC_COMPOSER_IP`, `FABRIC_COMPOSER_PORT`, `FABRIC_COMPOSER_PROTOCOL`).
+Then, it extracts `username`, `password`, and `URL`, parsing protocol, host, and port to export the variables expected by the main script (`FABRIC_COMPOSER_USERNAME`, `FABRIC_COMPOSER_PASSWORD`, `FABRIC_COMPOSER_IP`, `FABRIC_COMPOSER_PORT`, `FABRIC_COMPOSER_PROTOCOL`).
 
-## Fluxo de execução
+## Execution Flow
 
-1. Valida dependências (`curl`, `jq`, `sed`; `shred` opcional)
-2. Valida entradas obrigatórias (`ARUBA_VRF_NAME`, `ARUBA_FABRIC`)
-3. Lê e valida o secret `AFC_API` no Cypher
-4. Autentica no AFC (`/api/v1/auth/token`) e salva token temporariamente
-5. Invoca `create-vrf-afc.sh` com os argumentos mapeados
-6. Limpa com segurança os arquivos de token ao final (trap)
+1. Validates dependencies (`curl`, `jq`, `sed`; `shred` optional)
+2. Validates required inputs (`ARUBA_VRF_NAME`, `ARUBA_FABRIC`)
+3. Reads and validates the `AFC_API` secret from Cypher
+4. Authenticates with AFC (`/api/v1/auth/token`) and saves token temporarily
+5. Invokes `create-vrf-afc.sh` with mapped arguments
+6. Securely cleans up token files at the end (trap)
 
-Arquivos de token temporários (no mesmo diretório do wrapper):
+Temporary token files (in the same directory as the wrapper):
 
 - `.afc_token`
 - `.afc_token_expiry`
 
-Estes arquivos são sempre removidos ao término (EXIT/INT/TERM), usando `shred` quando disponível.
+These files are always removed at the end (EXIT/INT/TERM), using `shred` when available.
 
-## Requisitos para executar no Morpheus (Task)
+## Requirements to Run in Morpheus (Task)
 
-- Tipo da Task: Shell (Bash)
-- Conteúdo: o arquivo `wrapper-create-vrf-afc.sh` (ou referenciá-lo a partir do repositório)
-- Form/Options: definir os campos descritos em “Entradas suportadas”
-- Cypher: secret `AFC_API` existente e acessível
-- Permissões: a Task/Usuário precisa ter acesso ao Cypher `AFC_API`
-- Ambiente de execução precisa ter as dependências:
+- Task Type: Shell (Bash)
+- Content: the `wrapper-create-vrf-afc.sh` file (or reference it from the repository)
+- Form/Options: define the fields described in “Supported Inputs”
+- Cypher: existing and accessible `AFC_API` secret
+- Permissions: Task/User must have access to Cypher `AFC_API`
+- Execution environment must have dependencies:
   - `bash`, `curl`, `jq`, `sed`
-  - `shred` (opcional, para limpeza segura do token)
+  - `shred` (optional, for secure token cleanup)
 
-## Exemplo de uso (Morpheus)
+## Example Usage (Morpheus)
 
-- Crie/edit um Form/Option Type com os campos:
+- Create/edit a Form/Option Type with the fields:
   - `ARUBA_VRF_NAME` (text, required)
   - `ARUBA_FABRIC` (text, required)
   - `ARUBA_RD` (text, optional)
@@ -101,21 +102,21 @@ Estes arquivos são sempre removidos ao término (EXIT/INT/TERM), usando `shred`
   - `ARUBA_AF` (select: `ipv4`, `ipv6`, `ipv4,ipv6`, optional)
   - `ARUBA_DESCRIPTION` (text, optional)
   - `DRY_RUN` (boolean, optional)
-- Garanta o Cypher `AFC_API` conforme o JSON acima
-- Associe esse Form à Task que contém o script wrapper
-- Execute a Task passando os valores desejados
+- Ensure Cypher `AFC_API` is set as per the JSON above
+- Associate this Form with the Task containing the wrapper script
+- Run the Task passing the desired values
 
 ## Troubleshooting
 
-- 401/403: verifique `username/password` e permissões no AFC; cheque o `URL` do secret
-- Certificados: se o AFC usa certificado não confiável, o wrapper usa `--insecure` no `curl`
-- `DRY_RUN=true`: o wrapper valida, mas o `create-vrf-afc.sh` não aplica alterações
+- 401/403: check `username/password` and AFC permissions; verify the secret `URL`
+- Certificates: if AFC uses an untrusted certificate, the wrapper uses `--insecure` in `curl`
+- `DRY_RUN=true`: the wrapper validates, but `create-vrf-afc.sh` does not apply changes
 
-## Referências
+## References
 
 - AFC API Getting Started: <https://developer.arubanetworks.com/afc/docs/getting-started-with-the-afc-api>
 - VRF (AFC Online Help): <https://arubanetworking.hpe.com/techdocs/AFC/700/Content/afc70olh/add-vrf.htm>
 - Authentication API: <https://developer.arubanetworks.com/afc/reference/getapikey-1>
-- Ansible (referência de implementação AFC): <https://github.com/aruba/hpeanfc-ansible-collection>
+- Ansible (AFC implementation reference): <https://github.com/aruba/hpeanfc-ansible-collection>
 - Morpheus Data — Cypher (docs): <https://docs.morpheusdata.com/>
 - Morpheus Data — Groovy Template Syntax (docs): <https://docs.morpheusdata.com/>
