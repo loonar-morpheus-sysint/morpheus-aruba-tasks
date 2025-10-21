@@ -46,7 +46,7 @@ NC='\033[0m' # No Color
 
 # Parse LOG_VIEW from .env and store in array
 # Format: "debug, info, notice, warn, err, crit, alert, emerg"
-if [[ -n "${LOG_VIEW}" ]]; then
+if [[ -n "${LOG_VIEW:-}" ]]; then
     IFS=',' read -ra LOG_VIEW_ARRAY <<< "${LOG_VIEW}"
     # Trim whitespace from each element
     for i in "${!LOG_VIEW_ARRAY[@]}"; do

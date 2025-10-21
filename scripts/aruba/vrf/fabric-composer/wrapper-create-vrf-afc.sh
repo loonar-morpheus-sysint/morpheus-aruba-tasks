@@ -85,6 +85,24 @@ if [[ -z "${LIB_DIR}" ]]; then
 fi
 source "${LIB_DIR}/commons.sh"
 
+# Pre-scan arguments for --no-install
+NO_INSTALL=false
+for _a in "${@}"; do
+    if [[ "${_a}" == "--no-install" ]]; then
+        NO_INSTALL=true
+        break
+    fi
+done
+
+# Ensure jq is installed (utility may install it) unless disabled by --no-install
+if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh" ]]; then
+    # shellcheck disable=SC1091
+    source "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh"
+    ensure_jq_installed || true
+elif [[ "${NO_INSTALL}" == "true" ]]; then
+    log_info "--no-install specified: skipping jq installation. Ensure jq is available or python3 fallback will be used."
+fi
+
 set -euo pipefail
 
 ################################################################################
@@ -153,7 +171,8 @@ trap cleanup_tokens EXIT INT TERM
 
 check_dependencies() {
     _log_func_enter "check_dependencies"
-    local deps=("curl" "jq" "sed")
+    # jq is preferred, but fallback to python3 is available for JSON parsing
+    local deps=("curl" "sed")
     local missing=0
     for cmd in "${deps[@]}"; do
         if ! command -v "$cmd" > /dev/null 2>&1; then
@@ -163,6 +182,19 @@ check_dependencies() {
             log_debug "OK: $cmd"
         fi
     done
+
+    # Ensure either jq or python3 is available for JSON parsing
+    if ! command -v jq > /dev/null 2>&1 && ! command -v python3 > /dev/null 2>&1; then
+        log_error "Dependência ausente: jq (ou python3 para fallback JSON parsing)"
+        missing=1
+    else
+        if command -v jq > /dev/null 2>&1; then
+            log_debug "OK: jq"
+        else
+            log_debug "jq não encontrado - usando python3 como fallback para parsing JSON"
+        fi
+    fi
+
     if [[ $missing -eq 1 ]]; then
         _log_func_exit_fail "check_dependencies" "1"
         return 1
@@ -191,11 +223,19 @@ parse_cypher_secret() {
         return 1
     fi
 
-    # Extrai campos do JSON
+    # Extrai campos do JSON (usar jq se disponível, senão python3 como fallback)
+    if command -v jq > /dev/null 2>&1; then
     FABRIC_COMPOSER_USERNAME=$(echo "${AFC_API_JSON}" | jq -r '.username // empty')
     FABRIC_COMPOSER_PASSWORD=$(echo "${AFC_API_JSON}" | jq -r '.password // empty')
     local url
     url=$(echo "${AFC_API_JSON}" | jq -r '.URL // .url // empty')
+    else
+    # python fallback: safe extraction without external jq
+    FABRIC_COMPOSER_USERNAME=$(printf '%s' "${AFC_API_JSON}" | python3 -c 'import sys,json; o=json.load(sys.stdin); print(o.get("username") or "")')
+    FABRIC_COMPOSER_PASSWORD=$(printf '%s' "${AFC_API_JSON}" | python3 -c 'import sys,json; o=json.load(sys.stdin); print(o.get("password") or "")')
+    local url
+    url=$(printf '%s' "${AFC_API_JSON}" | python3 -c 'import sys,json; o=json.load(sys.stdin); print(o.get("URL") or o.get("url") or "")')
+    fi
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"
@@ -317,6 +357,10 @@ run_create_vrf() {
     [[ -n "${ARUBA_MAX_CPS_MODE}" && "${ARUBA_MAX_CPS_MODE}" != "<%=customOptions.ARUBA_MAX_CPS_MODE%>" ]] && args+=("--max-cps-mode" "${ARUBA_MAX_CPS_MODE}")
     [[ -n "${ARUBA_MAX_SESSIONS}" && "${ARUBA_MAX_SESSIONS}" != "<%=customOptions.ARUBA_MAX_SESSIONS%>" ]] && args+=("--max-sessions" "${ARUBA_MAX_SESSIONS}")
     [[ -n "${ARUBA_MAX_CPS}" && "${ARUBA_MAX_CPS}" != "<%=customOptions.ARUBA_MAX_CPS%>" ]] && args+=("--max-cps" "${ARUBA_MAX_CPS}")
+    # Propagate no-install flag
+    if [[ "${NO_INSTALL}" == "true" || "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
+        args+=("--no-install")
+    fi
 
     local dry
     dry=$(normalize_bool "${MORPHEUS_DRY_RUN:-}")

@@ -143,7 +143,33 @@
 # Load common library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
+
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../lib" && pwd)/commons.sh"
+
+# Pre-scan arguments for --no-install
+NO_INSTALL=false
+for _a in "${@}"; do
+  if [[ "${_a}" == "--no-install" ]]; then
+    NO_INSTALL=true
+    break
+  fi
+done
+
+# Ensure jq is installed (utility may install it) unless disabled by --no-install
+if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh"
+  ensure_jq_installed || true
+elif [[ "${NO_INSTALL}" == "true" ]]; then
+  log_info "--no-install specified: skipping jq installation. Ensure jq is available or python3 fallback will be used."
+fi
+
+# Ensure jq is installed (utility may install it)
+if [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh"
+  ensure_jq_installed || true
+fi
 
 ################################################################################
 # Global Variables
@@ -318,7 +344,7 @@ validate_environment() {
   local missing=0
 
   for var in "${required_vars[@]}"; do
-    if [[ -z "${!var}" ]]; then
+    if [[ -z "${!var:-}" ]]; then
       log_error "Required environment variable not set: ${var}"
       missing=1
     else
@@ -330,13 +356,13 @@ validate_environment() {
   FABRIC_COMPOSER_PORT="${FABRIC_COMPOSER_PORT:-443}"
   FABRIC_COMPOSER_PROTOCOL="${FABRIC_COMPOSER_PROTOCOL:-https}"
 
-  log_debug "Using Fabric Composer: ${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}"
-
   if [[ ${missing} -eq 1 ]]; then
     log_error "Please set all required environment variables"
     _log_func_exit_fail "validate_environment" "1"
     return 1
   fi
+
+  log_debug "Using Fabric Composer: ${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}"
 
   _log_func_exit_ok "validate_environment"
   return 0
@@ -1093,6 +1119,10 @@ parse_arguments() {
         ;;
       --dry-run)
         DRY_RUN=true
+        shift
+        ;;
+      --no-install)
+        NO_INSTALL=true
         shift
         ;;
       *)
