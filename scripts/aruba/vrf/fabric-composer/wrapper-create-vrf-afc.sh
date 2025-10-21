@@ -46,8 +46,44 @@ _resolve_script_dir() {
     printf '%s' "$(cd "$(dirname "${source_path}")" && pwd)"
 }
 
-SCRIPT_DIR="$(_resolve_script_dir)/../../../../lib"
-source "${SCRIPT_DIR}/commons.sh"
+_find_lib_dir() {
+    # Walk up parent directories from the script dir to find lib/commons.sh
+    local dir
+    dir="$(_resolve_script_dir)"
+    while [[ -n "${dir}" && "${dir}" != "/" ]]; do
+        if [[ -f "${dir}/lib/commons.sh" ]]; then
+            printf '%s' "${dir}/lib"
+            return 0
+        fi
+        dir="$(dirname "${dir}")"
+    done
+
+    # Fallback: check current working directory
+    if [[ -f "$(pwd)/lib/commons.sh" ]]; then
+        printf '%s' "$(pwd)/lib"
+        return 0
+    fi
+
+    # Last-resort heuristic (same as older behavior), normalize the path
+    local candidate
+    candidate="$(_resolve_script_dir)/../../../../lib"
+    if command -v readlink >/dev/null 2>&1; then
+        candidate=$(readlink -f -- "${candidate}" 2>/dev/null || echo "${candidate}")
+    fi
+    if [[ -f "${candidate}/commons.sh" ]]; then
+        printf '%s' "${candidate}"
+        return 0
+    fi
+
+    return 1
+}
+
+LIB_DIR="$(_find_lib_dir)"
+if [[ -z "${LIB_DIR}" ]]; then
+    echo "ERROR: Unable to locate lib/commons.sh" >&2
+    exit 1
+fi
+source "${LIB_DIR}/commons.sh"
 
 set -euo pipefail
 
