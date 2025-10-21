@@ -99,15 +99,44 @@ if [[ "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
     NO_INSTALL=true
 fi
 
+_find_install_script() {
+    # Walk upwards from script directory and look for utilities/install-jq.sh in
+    # a few common locations (project root utilities/ or scripts/utilities/).
+    local dir
+    dir="$(_resolve_script_dir)"
+    while [[ -n "${dir}" && "${dir}" != "/" ]]; do
+        if [[ -f "${dir}/utilities/install-jq.sh" ]]; then
+            printf '%s' "${dir}/utilities/install-jq.sh"
+            return 0
+        fi
+        if [[ -f "${dir}/scripts/utilities/install-jq.sh" ]]; then
+            printf '%s' "${dir}/scripts/utilities/install-jq.sh"
+            return 0
+        fi
+        dir="$(dirname "${dir}")"
+    done
+    return 1
+}
+
 # Ensure jq is installed (utility may install it) unless disabled by --no-install
-if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh" ]]; then
-    # shellcheck disable=SC1091
-    source "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh"
-    if ! ensure_jq_installed; then
-        log_error "jq installation or verification failed"
-        exit 1
+if [[ "${NO_INSTALL}" != "true" ]]; then
+    install_script_path=""
+    if install_script_path="$(_find_install_script)"; then
+        log_info "Found jq installer at: ${install_script_path}. Sourcing it now."
+        # shellcheck disable=SC1091
+        # shellcheck source=/dev/null
+        source "${install_script_path}"
+        log_info "Calling ensure_jq_installed() to install/verify jq"
+        if ! ensure_jq_installed; then
+            log_error "jq installation or verification failed"
+            log_debug "PATH after installation attempt: ${PATH}"
+            exit 1
+        fi
+        log_info "jq verification succeeded. Current jq: $(command -v jq || echo 'none')"
+    else
+        log_debug "No jq installer found (searched common locations). If jq is missing, set --no-install or provide jq in PATH."
     fi
-elif [[ "${NO_INSTALL}" == "true" ]]; then
+else
     log_info "--no-install specified: skipping jq installation. Ensure jq is available."
 fi
 
