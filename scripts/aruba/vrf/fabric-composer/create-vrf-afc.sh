@@ -237,6 +237,7 @@ OPTIONS:
   -s, --switches UUIDS      Comma-separated switch UUIDs (optional)
   -d, --description DESC    VRF description
   --dry-run                 Validate configuration without creating VRF
+  --no-install              Do not attempt to install dependencies (jq)
 
 ENVIRONMENT VARIABLES:
   FABRIC_COMPOSER_IP        Fabric Composer IP/hostname (required)
@@ -276,7 +277,7 @@ EOF
 check_dependencies() {
   _log_func_enter "check_dependencies"
 
-  local deps=("curl" "jq" "date")
+  local deps=("curl" "date")
   local missing=0
 
   for cmd in "${deps[@]}"; do
@@ -292,6 +293,25 @@ check_dependencies() {
     log_error "Please install missing dependencies before continuing"
     _log_func_exit_fail "check_dependencies" "1"
     return 1
+  fi
+
+  # JSON parser check: prefer jq, allow python3 as fallback if NO_INSTALL is set
+  if command -v jq > /dev/null 2>&1; then
+    log_debug "Dependency OK: jq"
+  else
+    if [[ "${NO_INSTALL}" == "true" ]]; then
+      if ! command -v python3 > /dev/null 2>&1; then
+        log_error "jq not found and --no-install was specified; python3 fallback is also unavailable"
+        _log_func_exit_fail "check_dependencies" "1"
+        return 1
+      else
+        log_debug "jq not found; python3 will be used as fallback"
+      fi
+    else
+      log_warn "jq not found; it should have been installed by ensure_jq_installed()"
+      _log_func_exit_fail "check_dependencies" "1"
+      return 1
+    fi
   fi
 
   _log_func_exit_ok "check_dependencies"

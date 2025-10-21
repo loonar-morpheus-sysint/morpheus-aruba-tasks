@@ -94,6 +94,11 @@ for _a in "${@}"; do
     fi
 done
 
+# Honor Morpheus custom option ARUBA_NO_INSTALL if provided
+if [[ "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
+    NO_INSTALL=true
+fi
+
 # Ensure jq is installed (utility may install it) unless disabled by --no-install
 if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh" ]]; then
     # shellcheck disable=SC1091
@@ -403,7 +408,8 @@ Exemplos locais (fora do Morpheus):
     export ARUBA_MAX_SESSIONS="10000"
     export ARUBA_MAX_CPS_MODE="limited"
     export ARUBA_MAX_CPS="1000"
-    ./wrapper-create-vrf-afc.sh
+    # Skip installer (no jq installation)
+    ./wrapper-create-vrf-afc.sh --no-install
 EOF
 }
 

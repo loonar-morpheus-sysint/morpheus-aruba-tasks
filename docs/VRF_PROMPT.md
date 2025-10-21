@@ -78,6 +78,7 @@ Preciso que você crie um script Bash chamado `scripts/hybrid/create-vrf-hybrid.
 - `--description <text>`
 - `--env-file <path>` (carregar credenciais)
 - `--dry-run` (mostrar payload sem executar)
+- `--no-install` (não instalar dependências automaticamente)
 
 **Parâmetros Específicos do Fabric Composer (12):**
 
