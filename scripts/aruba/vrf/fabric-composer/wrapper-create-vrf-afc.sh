@@ -100,9 +100,9 @@ if [[ "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
 fi
 
 # Ensure jq is installed (utility may install it) unless disabled by --no-install
-if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh" ]]; then
+if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh" ]]; then
     # shellcheck disable=SC1091
-    source "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh"
+    source "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh"
     if ! ensure_jq_installed; then
         log_error "jq installation or verification failed"
         exit 1

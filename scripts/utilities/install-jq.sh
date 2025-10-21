@@ -37,8 +37,8 @@ fi
 ensure_jq_installed() {
     _log_func_enter "ensure_jq_installed"
 
-    # Already installed?
-    if command -v jq > /dev/null 2>&1; then
+    # Already installed? Allow forcing installation for tests using JQ_INSTALL_FORCE
+    if [[ -z "${JQ_INSTALL_FORCE:-}" ]] && command -v jq > /dev/null 2>&1; then
         log_info "jq is already installed at $(command -v jq)"
         _log_func_exit_ok "ensure_jq_installed"
         return 0
@@ -54,17 +54,19 @@ ensure_jq_installed() {
     jq_path="${jq_dir}/jq"
     download_url="https://github.com/stedolan/jq/releases/latest/download/jq-linux64"
 
-    # Ensure directory exists (fall back to $HOME/.local/bin if not writable)
-    if ! mkdir -p "${jq_dir}" 2>/dev/null; then
-        log_warn "Cannot create ${jq_dir}, falling back to ${HOME}/.local/bin"
+    # Ensure directory exists and is writable (fall back to $HOME/.local/bin if not writable)
+    if ! mkdir -p "${jq_dir}" 2>/dev/null || ! touch "${jq_dir}/.write_test" 2>/dev/null; then
+        log_warn "Cannot create or write to ${jq_dir}, falling back to ${HOME}/.local/bin"
         jq_dir="${HOME}/.local/bin"
         jq_path="${jq_dir}/jq"
-        if ! mkdir -p "${jq_dir}" 2>/dev/null; then
+        if ! mkdir -p "${jq_dir}" 2>/dev/null || ! touch "${jq_dir}/.write_test" 2>/dev/null; then
             log_error "Unable to create fallback directory: ${jq_dir}"
             _log_func_exit_fail "ensure_jq_installed" "1"
             return 1
         fi
     fi
+    # remove write test file if present
+    rm -f "${jq_dir}/.write_test" 2>/dev/null || true
 
     log_info "Installing jq to ${jq_path}"
 
