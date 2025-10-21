@@ -402,6 +402,22 @@ teardown() {
   [ "$status" -eq 0 ]
 }
 
+@test "create-vrf-afc.sh: Supports max sessions and cps options" {
+  run grep -- '--max-sessions-mode' "${SCRIPT_PATH}"
+  [ "$status" -eq 0 ]
+  run grep -- '--max-cps-mode' "${SCRIPT_PATH}"
+  [ "$status" -eq 0 ]
+  run grep -- '--max-sessions' "${SCRIPT_PATH}"
+  [ "$status" -eq 0 ]
+  run grep -- '--max-cps' "${SCRIPT_PATH}"
+  [ "$status" -eq 0 ]
+}
+
+@test "create-vrf-afc.sh: Includes max_sessions and max_cps in payload builder" {
+  run grep -E 'max_sessions_mode|max_cps_mode|max_sessions|max_cps' "${SCRIPT_PATH}"
+  [ "$status" -eq 0 ]
+}
+
 @test "create-vrf-afc.sh: Local variables use lowercase" {
   # Check that functions use local variables
   run bash -c "grep 'local [a-z_]*=' '${SCRIPT_PATH}' | wc -l"

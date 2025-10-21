@@ -129,6 +129,36 @@ COMPLETE_PAYLOAD=$(jq -n \
 echo "${COMPLETE_PAYLOAD}" | jq '.'
 echo -e "${GREEN}✓ Complete payload structure valid${NC}\n"
 
+# Test 7: Payload with session limits
+echo -e "${YELLOW}Test 7: VRF with session limits${NC}"
+LIMITS_PAYLOAD=$(jq -n \
+  --arg name "LIMIT-VRF" \
+  --arg fabric_uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
+  --arg max_sessions_mode "limited" \
+  --arg max_cps_mode "limited" \
+  --argjson max_sessions 20000 \
+  --argjson max_cps 2000 \
+  '{
+    name: $name,
+    fabric_uuid: $fabric_uuid,
+    max_sessions_mode: $max_sessions_mode,
+    max_cps_mode: $max_cps_mode,
+    max_sessions: $max_sessions,
+    max_cps: $max_cps,
+    networks: [],
+    bgp: {
+      bestpath: true,
+      fast_external_fallover: true,
+      trap_enable: false,
+      log_neighbor_changes: true,
+      deterministic_med: true,
+      always_compare_med: true
+    }
+  }')
+
+echo "${LIMITS_PAYLOAD}" | jq '.'
+echo -e "${GREEN}✓ session limits payload structure valid${NC}\n"
+
 # Test 5: Validate required fields
 echo -e "${YELLOW}Test 5: Validate required fields${NC}"
 REQUIRED_FIELDS=("name" "fabric_uuid")

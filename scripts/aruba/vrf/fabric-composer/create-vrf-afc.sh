@@ -166,6 +166,10 @@ SWITCH_UUIDS=""  # Comma-separated list of switch UUIDs (optional)
 ROUTE_DISTINGUISHER=""
 ROUTE_TARGET_IMPORT=""
 ROUTE_TARGET_EXPORT=""
+MAX_SESSIONS_MODE="unlimited"
+MAX_CPS_MODE="unlimited"
+MAX_SESSIONS=""
+MAX_CPS=""
 ADDRESS_FAMILY="ipv4"  # Default: ipv4
 VNI=""  # L2/L3 VPN VNI (optional)
 INTERACTIVE_MODE=false
@@ -200,6 +204,10 @@ OPTIONS:
   -E, --rt-export RT        Route Target Export (comma-separated)
   -a, --af FAMILY           Address Family: ipv4, ipv6, evpn (default: ipv4)
   -v, --vni VNI             L2/L3 VPN VNI (1-16777214)
+  --max-sessions-mode MODE  max sessions mode: unlimited|limited (default: unlimited)
+  --max-cps-mode MODE       max cps mode: unlimited|limited (default: unlimited)
+  --max-sessions NUM        max sessions (required if mode=limited)
+  --max-cps NUM             max cps (required if mode=limited)
   -s, --switches UUIDS      Comma-separated switch UUIDs (optional)
   -d, --description DESC    VRF description
   --dry-run                 Validate configuration without creating VRF
@@ -745,6 +753,20 @@ build_vrf_payload() {
   }')
   payload=$(echo "${payload}" | jq --argjson bgp "${bgp_config}" '. + {bgp: $bgp}')
 
+  # Add session and CPS limits
+  if [[ -n "${MAX_SESSIONS_MODE}" ]]; then
+    payload=$(echo "${payload}" | jq --arg mode "${MAX_SESSIONS_MODE}" '. + {max_sessions_mode: $mode}')
+  fi
+  if [[ -n "${MAX_CPS_MODE}" ]]; then
+    payload=$(echo "${payload}" | jq --arg mode "${MAX_CPS_MODE}" '. + {max_cps_mode: $mode}')
+  fi
+  if [[ -n "${MAX_SESSIONS}" ]]; then
+    payload=$(echo "${payload}" | jq --argjson max "${MAX_SESSIONS}" '. + {max_sessions: $max}')
+  fi
+  if [[ -n "${MAX_CPS}" ]]; then
+    payload=$(echo "${payload}" | jq --argjson max "${MAX_CPS}" '. + {max_cps: $max}')
+  fi
+
   echo "${payload}"
 
   _log_func_exit_ok "build_vrf_payload"
@@ -1049,6 +1071,22 @@ parse_arguments() {
         SWITCH_UUIDS="$2"
         shift 2
         ;;
+      --max-sessions-mode)
+        MAX_SESSIONS_MODE="$2"
+        shift 2
+        ;;
+      --max-cps-mode)
+        MAX_CPS_MODE="$2"
+        shift 2
+        ;;
+      --max-sessions)
+        MAX_SESSIONS="$2"
+        shift 2
+        ;;
+      --max-cps)
+        MAX_CPS="$2"
+        shift 2
+        ;;
       -d|--description)
         VRF_DESCRIPTION="$2"
         shift 2
@@ -1084,6 +1122,25 @@ main() {
     log_error "Dependency check failed"
     _log_func_exit_fail "main" "1"
     exit 1
+  fi
+
+  # Validate session limits modes
+  if [[ "${MAX_SESSIONS_MODE}" != "unlimited" && "${MAX_SESSIONS_MODE}" != "limited" ]]; then
+    log_error "Invalid max_sessions_mode: ${MAX_SESSIONS_MODE} (must be 'unlimited' or 'limited')"
+    errors=1
+  fi
+  if [[ "${MAX_CPS_MODE}" != "unlimited" && "${MAX_CPS_MODE}" != "limited" ]]; then
+    log_error "Invalid max_cps_mode: ${MAX_CPS_MODE} (must be 'unlimited' or 'limited')"
+    errors=1
+  fi
+
+  if [[ "${MAX_SESSIONS_MODE}" == "limited" && -z "${MAX_SESSIONS}" ]]; then
+    log_error "max_sessions must be provided when max_sessions_mode is 'limited'"
+    errors=1
+  fi
+  if [[ "${MAX_CPS_MODE}" == "limited" && -z "${MAX_CPS}" ]]; then
+    log_error "max_cps must be provided when max_cps_mode is 'limited'"
+    errors=1
   fi
 
   # Parse arguments

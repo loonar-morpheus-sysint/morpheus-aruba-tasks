@@ -101,6 +101,10 @@ ARUBA_VNI="<%=customOptions.ARUBA_VNI%>" # L2/L3 VPN VNI (1-16777214)
 ARUBA_SWITCHES="<%=customOptions.ARUBA_SWITCHES%>" # Comma-separated switch UUIDs (optional)
 ARUBA_DESCRIPTION="<%=customOptions.ARUBA_DESCRIPTION%>"
 MORPHEUS_DRY_RUN="<%=customOptions.DRY_RUN%>" # true/false (opcional)
+ARUBA_MAX_SESSIONS_MODE="<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>"
+ARUBA_MAX_CPS_MODE="<%=customOptions.ARUBA_MAX_CPS_MODE%>"
+ARUBA_MAX_SESSIONS="<%=customOptions.ARUBA_MAX_SESSIONS%>"
+ARUBA_MAX_CPS="<%=customOptions.ARUBA_MAX_CPS%>"
 
 # Credenciais do AFC via Cypher (JSON)
 AFC_API_JSON="<%=cypher.read('AFC_API')%>"
@@ -309,6 +313,10 @@ run_create_vrf() {
     [[ -n "${ARUBA_VNI}" && "${ARUBA_VNI}" != "<%=customOptions.ARUBA_VNI%>" ]] && args+=("--vni" "${ARUBA_VNI}")
     [[ -n "${ARUBA_SWITCHES}" && "${ARUBA_SWITCHES}" != "<%=customOptions.ARUBA_SWITCHES%>" ]] && args+=("--switches" "${ARUBA_SWITCHES}")
     [[ -n "${ARUBA_DESCRIPTION}" && "${ARUBA_DESCRIPTION}" != "<%=customOptions.ARUBA_DESCRIPTION%>" ]] && args+=("--description" "${ARUBA_DESCRIPTION}")
+    [[ -n "${ARUBA_MAX_SESSIONS_MODE}" && "${ARUBA_MAX_SESSIONS_MODE}" != "<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>" ]] && args+=("--max-sessions-mode" "${ARUBA_MAX_SESSIONS_MODE}")
+    [[ -n "${ARUBA_MAX_CPS_MODE}" && "${ARUBA_MAX_CPS_MODE}" != "<%=customOptions.ARUBA_MAX_CPS_MODE%>" ]] && args+=("--max-cps-mode" "${ARUBA_MAX_CPS_MODE}")
+    [[ -n "${ARUBA_MAX_SESSIONS}" && "${ARUBA_MAX_SESSIONS}" != "<%=customOptions.ARUBA_MAX_SESSIONS%>" ]] && args+=("--max-sessions" "${ARUBA_MAX_SESSIONS}")
+    [[ -n "${ARUBA_MAX_CPS}" && "${ARUBA_MAX_CPS}" != "<%=customOptions.ARUBA_MAX_CPS%>" ]] && args+=("--max-cps" "${ARUBA_MAX_CPS}")
 
     local dry
     dry=$(normalize_bool "${MORPHEUS_DRY_RUN:-}")
@@ -347,6 +355,10 @@ Exemplos locais (fora do Morpheus):
     export ARUBA_VNI="5000"
     export ARUBA_SWITCHES="switch-uuid-1,switch-uuid-2"
     export ARUBA_DESCRIPTION="Production VRF"
+    export ARUBA_MAX_SESSIONS_MODE="limited"
+    export ARUBA_MAX_SESSIONS="10000"
+    export ARUBA_MAX_CPS_MODE="limited"
+    export ARUBA_MAX_CPS="1000"
     ./wrapper-create-vrf-afc.sh
 EOF
 }

@@ -128,6 +128,17 @@ Este documento mapeia **todos os parâmetros** suportados pelas duas APIs:
 
 **Nota**: `max_sessions` e `max_cps` são obrigatórios quando seus respectivos `*_mode` são definidos como `"limited"`.
 
+### CLI and Wrapper Options
+
+Os scripts `create-vrf-afc.sh` e `wrapper-create-vrf-afc.sh` expõem flags adicionais para definir limites de sessão e CPS diretamente a partir da linha de comando ou de parâmetros do Morpheus:
+
+- `--max-sessions-mode [unlimited|limited]` ou `ARUBA_MAX_SESSIONS_MODE` (wrapper)
+- `--max-cps-mode [unlimited|limited]` ou `ARUBA_MAX_CPS_MODE` (wrapper)
+- `--max-sessions NUM` ou `ARUBA_MAX_SESSIONS` (wrapper)
+- `--max-cps NUM` ou `ARUBA_MAX_CPS` (wrapper)
+
+Estes flags são validados pelo script e injetados no payload enviado à API.
+
 ---
 
 ## 🔄 Mapeamento de Parâmetros Entre APIs

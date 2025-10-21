@@ -108,6 +108,8 @@ Preciso que você crie um script Bash chamado `scripts/hybrid/create-vrf-hybrid.
 - `--bgp-always-compare-med` (flag: always compare MED)
 - `--max-sessions <number>` (max concurrent sessions)
 - `--max-cps <number>` (max connections per second)
+- `--max-sessions-mode <unlimited|limited>` (mode for max sessions; AFC wrapper exposes ARUBA_MAX_SESSIONS_MODE)
+- `--max-cps-mode <unlimited|limited>` (mode for max cps; AFC wrapper exposes ARUBA_MAX_CPS_MODE)
 - `--api-version <version>` (default: v10.15)
 
 ### 4. Funcionalidades Obrigatórias
