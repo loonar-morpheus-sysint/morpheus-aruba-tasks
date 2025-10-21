@@ -162,7 +162,8 @@ ARUBA_MAX_SESSIONS="${ARUBA_MAX_SESSIONS:-<%=customOptions.ARUBA_MAX_SESSIONS%>}
 ARUBA_MAX_CPS="${ARUBA_MAX_CPS:-<%=customOptions.ARUBA_MAX_CPS%>}"
 
 # Credenciais do AFC via Cypher (JSON)
-AFC_API_JSON="<%=cypher.read('secret/AFC_API')%>"
+# Honra variável de ambiente se já definida (útil para testes locais)
+AFC_API_JSON="${AFC_API_JSON:-<%=cypher.read('secret/AFC_API')%>}"
 
 ################################################################################
 # Constantes e arquivos de token (compartilhados com create-vrf-afc.sh)
@@ -255,29 +256,37 @@ parse_cypher_secret() {
         return 1
     fi
 
-    # Trim CRs and handle double-encoded JSON (a JSON string containing JSON)
-    local cleaned
-    cleaned=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r')
+    local cleaned trimmed
+    # Remove control chars (CR, NUL, etc.)
+    cleaned=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r' | tr -d '\000')
+    # Trim leading/trailing whitespace
+    trimmed=$(printf '%s' "${cleaned}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 
-    # Try to parse: support both object and string containing object
-    local parsed_json jq_err
-    if ! parsed_json=$(printf '%s' "${cleaned}" | jq -c 'if type=="string" then fromjson else . end' 2>&1); then
-        jq_err="${parsed_json}"
-        log_error "AFC_API cypher secret does not contain valid JSON or is double-encoded"
-        # Print a short sanitized snippet to help debugging (do not leak secrets)
+    # Strategy 1: Try direct JSON parse (most common case: valid JSON)
+    local parsed_json
+    if parsed_json=$(printf '%s' "${trimmed}" | jq -c '.' 2>/dev/null); then
+        log_debug "AFC_API: Direct JSON parse succeeded"
+    # Strategy 2: Try JSON string containing JSON (double-encoded)
+    elif parsed_json=$(printf '%s' "${trimmed}" | jq -r '.' 2>/dev/null | jq -c '.' 2>/dev/null); then
+        log_debug "AFC_API: Double-encoded JSON parse succeeded"
+    # Strategy 3: Try -R -s fromjson (raw input mode)
+    elif parsed_json=$(printf '%s' "${trimmed}" | jq -R -s 'fromjson' 2>/dev/null); then
+        log_debug "AFC_API: Raw input fromjson succeeded"
+    else
+        # All strategies failed; log details and exit
+        log_error "AFC_API cypher secret does not contain valid JSON"
         local snippet
-        snippet=$(printf '%s' "${cleaned}" | sed -n '1p' | sed -E 's/("password"\s*:\s*)"[^"]*"/\1"*****"/I' | cut -c1-200)
-        log_debug "AFC_API (sanitized snippet): ${snippet}"
-        log_debug "jq error: ${jq_err}"
+        snippet=$(printf '%s' "${trimmed}" | head -c 100 | sed -E 's/(password)[^,}]*/\1=****/I')
+        log_debug "AFC_API (sanitized, first 100 chars): ${snippet}"
         _log_func_exit_fail "parse_cypher_secret" "1"
         return 1
     fi
 
-    # Extract fields from the parsed JSON using jq (compact format in parsed_json)
-    FABRIC_COMPOSER_USERNAME=$(printf '%s' "${parsed_json}" | jq -r '.username // empty')
-    FABRIC_COMPOSER_PASSWORD=$(printf '%s' "${parsed_json}" | jq -r '.password // empty')
+    # Extract fields using jq
+    FABRIC_COMPOSER_USERNAME=$(printf '%s' "${parsed_json}" | jq -r '.username // empty' 2>/dev/null || true)
+    FABRIC_COMPOSER_PASSWORD=$(printf '%s' "${parsed_json}" | jq -r '.password // empty' 2>/dev/null || true)
     local url
-    url=$(printf '%s' "${parsed_json}" | jq -r '.URL // .url // empty')
+    url=$(printf '%s' "${parsed_json}" | jq -r '.URL // .url // empty' 2>/dev/null || true)
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"
