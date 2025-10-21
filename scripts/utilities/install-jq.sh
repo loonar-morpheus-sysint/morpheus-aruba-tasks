@@ -68,28 +68,36 @@ ensure_jq_installed() {
     # remove write test file if present
     rm -f "${jq_dir}/.write_test" 2>/dev/null || true
 
-    log_info "Installing jq to ${jq_path}"
+    log_info "Installing jq to ${jq_path} (download URL: ${download_url})"
 
     # Download jq using curl (prefer curl, but try wget if curl missing)
     if command -v curl > /dev/null 2>&1; then
+        log_info "Downloading jq via curl..."
         if ! curl -L -sSf -o "${jq_path}" "${download_url}"; then
             log_error "Failed to download jq with curl"
             _log_func_exit_fail "ensure_jq_installed" "1"
             return 1
         fi
+        log_info "Download complete: $(stat -c%s "${jq_path}" 2>/dev/null || echo 'unknown') bytes"
     elif command -v wget > /dev/null 2>&1; then
+        log_info "Downloading jq via wget..."
         if ! wget -q -O "${jq_path}" "${download_url}"; then
             log_error "Failed to download jq with wget"
             _log_func_exit_fail "ensure_jq_installed" "1"
             return 1
         fi
+        log_info "Download complete: $(stat -c%s "${jq_path}" 2>/dev/null || echo 'unknown') bytes"
     else
         log_error "Neither curl nor wget are available to download jq"
         _log_func_exit_fail "ensure_jq_installed" "1"
         return 1
     fi
 
-    chmod +x "${jq_path}" 2>/dev/null || log_warn "Unable to chmod ${jq_path}"
+    if chmod +x "${jq_path}" 2>/dev/null; then
+        log_info "Made ${jq_path} executable"
+    else
+        log_warn "Unable to chmod ${jq_path}"
+    fi
 
     # Ensure install dir is on PATH for current session
     if [[ ":$PATH:" != *":$(dirname "${jq_path}"):"* ]]; then
@@ -100,16 +108,31 @@ ensure_jq_installed() {
     fi
 
     # Validate installation
+    # Verify installation by invoking jq without looking at a specific path
     if command -v jq > /dev/null 2>&1; then
-        log_success "jq installed successfully: $(command -v jq)"
-        jq --version || true
+        local jq_found
+        jq_found=$(command -v jq)
+        log_success "jq installed successfully and found in PATH: ${jq_found}"
+        log_info "jq --version: $(jq --version 2>/dev/null || echo 'unknown')"
         _log_func_exit_ok "ensure_jq_installed"
         return 0
     fi
 
     # If command -v didn't find it, but file exists and is executable, use it directly
     if [[ -x "${jq_path}" ]]; then
-        log_success "jq installed to ${jq_path} (not in PATH)"
+        log_info "jq present at ${jq_path} but not in PATH; adding to PATH"
+        local jq_dirname
+        jq_dirname=$(dirname "${jq_path}")
+        if [[ ":$PATH:" != *":${jq_dirname}:"* ]]; then
+            export PATH="$PATH:${jq_dirname}"
+            log_info "Added ${jq_dirname} to PATH for current session"
+        fi
+        if command -v jq > /dev/null 2>&1; then
+            log_success "jq now available in PATH: $(command -v jq)"
+            log_info "jq --version: $(jq --version 2>/dev/null || echo 'unknown')"
+        else
+            log_warn "jq installed at ${jq_path} but still not found in PATH"
+        fi
         _log_func_exit_ok "ensure_jq_installed"
         return 0
     fi
