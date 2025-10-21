@@ -64,7 +64,7 @@ Create a secret in Morpheus Cypher named `AFC_API` containing JSON in the format
 The wrapper reads this value with:
 
 ```bash
-AFC_API_JSON="<%=cypher.read('AFC_API')%>"
+AFC_API_JSON="<%=cypher.read('secret/AFC_API')%>"
 ```
 
 Then, it extracts `username`, `password`, and `URL`, parsing protocol, host, and port to export the variables expected by the main script (`FABRIC_COMPOSER_USERNAME`, `FABRIC_COMPOSER_PASSWORD`, `FABRIC_COMPOSER_IP`, `FABRIC_COMPOSER_PORT`, `FABRIC_COMPOSER_PROTOCOL`).
