@@ -114,20 +114,20 @@ set -euo pipefail
 # Variáveis vindas do Morpheus (Groovy Template Syntax)
 # Obs.: no Morpheus, estas expressões são renderizadas antes da execução.
 ################################################################################
-ARUBA_VRF_NAME="<%=customOptions.ARUBA_VRF_NAME%>"
-ARUBA_FABRIC="<%=customOptions.ARUBA_FABRIC%>"
-ARUBA_RD="<%=customOptions.ARUBA_RD%>"
-ARUBA_RT_IMPORT="<%=customOptions.ARUBA_RT_IMPORT%>"
-ARUBA_RT_EXPORT="<%=customOptions.ARUBA_RT_EXPORT%>"
-ARUBA_AF="<%=customOptions.ARUBA_AF%>" # ipv4, ipv6, evpn (default: ipv4)
-ARUBA_VNI="<%=customOptions.ARUBA_VNI%>" # L2/L3 VPN VNI (1-16777214)
-ARUBA_SWITCHES="<%=customOptions.ARUBA_SWITCHES%>" # Comma-separated switch UUIDs (optional)
-ARUBA_DESCRIPTION="<%=customOptions.ARUBA_DESCRIPTION%>"
-MORPHEUS_DRY_RUN="<%=customOptions.DRY_RUN%>" # true/false (opcional)
-ARUBA_MAX_SESSIONS_MODE="<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>"
-ARUBA_MAX_CPS_MODE="<%=customOptions.ARUBA_MAX_CPS_MODE%>"
-ARUBA_MAX_SESSIONS="<%=customOptions.ARUBA_MAX_SESSIONS%>"
-ARUBA_MAX_CPS="<%=customOptions.ARUBA_MAX_CPS%>"
+ARUBA_VRF_NAME="${ARUBA_VRF_NAME:-<%=customOptions.ARUBA_VRF_NAME%>}"
+ARUBA_FABRIC="${ARUBA_FABRIC:-<%=customOptions.ARUBA_FABRIC%>}"
+ARUBA_RD="${ARUBA_RD:-<%=customOptions.ARUBA_RD%>}"
+ARUBA_RT_IMPORT="${ARUBA_RT_IMPORT:-<%=customOptions.ARUBA_RT_IMPORT%>}"
+ARUBA_RT_EXPORT="${ARUBA_RT_EXPORT:-<%=customOptions.ARUBA_RT_EXPORT%>}"
+ARUBA_AF="${ARUBA_AF:-<%=customOptions.ARUBA_AF%>}" # ipv4, ipv6, evpn (default: ipv4)
+ARUBA_VNI="${ARUBA_VNI:-<%=customOptions.ARUBA_VNI%>}" # L2/L3 VPN VNI (1-16777214)
+ARUBA_SWITCHES="${ARUBA_SWITCHES:-<%=customOptions.ARUBA_SWITCHES%>}" # Comma-separated switch UUIDs (optional)
+ARUBA_DESCRIPTION="${ARUBA_DESCRIPTION:-<%=customOptions.ARUBA_DESCRIPTION%>}"
+MORPHEUS_DRY_RUN="${MORPHEUS_DRY_RUN:-<%=customOptions.DRY_RUN%>}" # true/false (opcional)
+ARUBA_MAX_SESSIONS_MODE="${ARUBA_MAX_SESSIONS_MODE:-<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>}"
+ARUBA_MAX_CPS_MODE="${ARUBA_MAX_CPS_MODE:-<%=customOptions.ARUBA_MAX_CPS_MODE%>}"
+ARUBA_MAX_SESSIONS="${ARUBA_MAX_SESSIONS:-<%=customOptions.ARUBA_MAX_SESSIONS%>}"
+ARUBA_MAX_CPS="${ARUBA_MAX_CPS:-<%=customOptions.ARUBA_MAX_CPS%>}"
 
 # Credenciais do AFC via Cypher (JSON)
 AFC_API_JSON="<%=cypher.read('AFC_API')%>"
@@ -279,11 +279,12 @@ validate_required_inputs() {
     _log_func_enter "validate_required_inputs"
     local errors=0
 
-    if [[ -z "${ARUBA_VRF_NAME}" || "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
+    # If the template was not rendered, the value stays as the literal placeholder
+    if [[ -z "${ARUBA_VRF_NAME:-}" || "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
         log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME"
         errors=1
     fi
-    if [[ -z "${ARUBA_FABRIC}" || "${ARUBA_FABRIC}" == "<%=customOptions.ARUBA_FABRIC%>" ]]; then
+    if [[ -z "${ARUBA_FABRIC:-}" || "${ARUBA_FABRIC}" == "<%=customOptions.ARUBA_FABRIC%>" ]]; then
         log_error "Parâmetro obrigatório ausente: ARUBA_FABRIC"
         errors=1
     fi
