@@ -250,8 +250,19 @@ normalize_bool() {
 parse_cypher_secret() {
     _log_func_enter "parse_cypher_secret"
 
+    # Check if running outside Morpheus (template not rendered)
+    if [[ "${AFC_API_JSON}" == *"cypher.read"* ]]; then
+        log_error "AFC_API_JSON contains Groovy template syntax - script is not running in Morpheus context"
+        log_error "When running locally, set AFC_API_JSON environment variable with valid JSON:"
+        log_error "  export AFC_API_JSON='{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'"
+        _log_func_exit_fail "parse_cypher_secret" "1"
+        return 1
+    fi
+
     if [[ -z "${AFC_API_JSON}" || "${AFC_API_JSON}" == "null" ]]; then
         log_error "Cypher 'AFC_API' não retornou conteúdo"
+        log_error "When running locally outside Morpheus, set AFC_API_JSON environment variable:"
+        log_error "  export AFC_API_JSON='{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'"
         _log_func_exit_fail "parse_cypher_secret" "1"
         return 1
     fi
