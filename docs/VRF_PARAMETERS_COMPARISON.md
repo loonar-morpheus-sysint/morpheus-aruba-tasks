@@ -132,6 +132,8 @@ Este documento mapeia **todos os parâmetros** suportados pelas duas APIs:
 
 When running the scripts you can opt out of automatic dependency installation with the `--no-install` flag. If you specify this flag the script will not attempt to install `jq`. In that case either `jq` or `python3` must already be available on the system.
 
+Note: The wrapper and VRF scripts now include an installer for `jq` (`scripts/utilities/install-jq.sh`). By default the scripts will attempt to install `jq` automatically (unless `--no-install` is passed). If you prefer to manage dependencies yourself, use `--no-install` and ensure `jq` is present in PATH before running the wrapper.
+
 ### CLI and Wrapper Options
 
 Os scripts `create-vrf-afc.sh` e `wrapper-create-vrf-afc.sh` expõem flags adicionais para definir limites de sessão e CPS diretamente a partir da linha de comando ou de parâmetros do Morpheus:

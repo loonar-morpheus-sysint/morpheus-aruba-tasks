@@ -172,6 +172,8 @@ Todas as validações são executadas automaticamente no GitHub Actions para:
 
 - **jq**, **curl**, **wget**, **vim**, **nano**
 
+Note: A small installer for `jq` is available at `scripts/utilities/install-jq.sh`. Wrapper scripts will attempt to install `jq` automatically (unless `--no-install` is passed). If `--no-install` is used, ensure `jq` is present in PATH before running the scripts.
+
 #### Extensões VS Code
 
 - **Shellcheck** (`timonwong.shellcheck`)

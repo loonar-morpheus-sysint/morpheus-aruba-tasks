@@ -103,9 +103,12 @@ fi
 if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh" ]]; then
     # shellcheck disable=SC1091
     source "$(dirname "${BASH_SOURCE[0]}")/../../utilities/install-jq.sh"
-    ensure_jq_installed || true
+    if ! ensure_jq_installed; then
+        log_error "jq installation or verification failed"
+        exit 1
+    fi
 elif [[ "${NO_INSTALL}" == "true" ]]; then
-    log_info "--no-install specified: skipping jq installation. Ensure jq is available or python3 fallback will be used."
+    log_info "--no-install specified: skipping jq installation. Ensure jq is available."
 fi
 
 set -euo pipefail
@@ -176,7 +179,7 @@ trap cleanup_tokens EXIT INT TERM
 
 check_dependencies() {
     _log_func_enter "check_dependencies"
-    # jq is preferred, but fallback to python3 is available for JSON parsing
+    # jq is required for JSON parsing
     local deps=("curl" "sed")
     local missing=0
     for cmd in "${deps[@]}"; do
@@ -188,16 +191,11 @@ check_dependencies() {
         fi
     done
 
-    # Ensure either jq or python3 is available for JSON parsing
-    if ! command -v jq > /dev/null 2>&1 && ! command -v python3 > /dev/null 2>&1; then
-        log_error "Dependência ausente: jq (ou python3 para fallback JSON parsing)"
+    if ! command -v jq > /dev/null 2>&1; then
+        log_error "Dependência ausente: jq (install-jq.sh can install it, or run with --no-install after providing jq)"
         missing=1
     else
-        if command -v jq > /dev/null 2>&1; then
-            log_debug "OK: jq"
-        else
-            log_debug "jq não encontrado - usando python3 como fallback para parsing JSON"
-        fi
+        log_debug "OK: jq"
     fi
 
     if [[ $missing -eq 1 ]]; then
@@ -228,19 +226,11 @@ parse_cypher_secret() {
         return 1
     fi
 
-    # Extrai campos do JSON (usar jq se disponível, senão python3 como fallback)
-    if command -v jq > /dev/null 2>&1; then
+    # Extract fields from the JSON secret using jq
     FABRIC_COMPOSER_USERNAME=$(echo "${AFC_API_JSON}" | jq -r '.username // empty')
     FABRIC_COMPOSER_PASSWORD=$(echo "${AFC_API_JSON}" | jq -r '.password // empty')
     local url
     url=$(echo "${AFC_API_JSON}" | jq -r '.URL // .url // empty')
-    else
-    # python fallback: safe extraction without external jq
-    FABRIC_COMPOSER_USERNAME=$(printf '%s' "${AFC_API_JSON}" | python3 -c 'import sys,json; o=json.load(sys.stdin); print(o.get("username") or "")')
-    FABRIC_COMPOSER_PASSWORD=$(printf '%s' "${AFC_API_JSON}" | python3 -c 'import sys,json; o=json.load(sys.stdin); print(o.get("password") or "")')
-    local url
-    url=$(printf '%s' "${AFC_API_JSON}" | python3 -c 'import sys,json; o=json.load(sys.stdin); print(o.get("URL") or o.get("url") or "")')
-    fi
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"

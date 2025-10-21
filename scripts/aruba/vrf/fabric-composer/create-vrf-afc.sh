@@ -159,17 +159,14 @@ done
 if [[ "${NO_INSTALL}" != "true" ]] && [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh" ]]; then
   # shellcheck disable=SC1091
   source "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh"
-  ensure_jq_installed || true
+  if ! ensure_jq_installed; then
+    log_error "jq installation or verification failed"
+    exit 1
+  fi
 elif [[ "${NO_INSTALL}" == "true" ]]; then
-  log_info "--no-install specified: skipping jq installation. Ensure jq is available or python3 fallback will be used."
+  log_info "--no-install specified: skipping jq installation. Ensure jq is available."
 fi
 
-# Ensure jq is installed (utility may install it)
-if [[ -f "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh" ]]; then
-  # shellcheck disable=SC1091
-  source "$(dirname "${BASH_SOURCE[0]}")/../../../../utilities/install-jq.sh"
-  ensure_jq_installed || true
-fi
 
 ################################################################################
 # Global Variables
@@ -295,23 +292,13 @@ check_dependencies() {
     return 1
   fi
 
-  # JSON parser check: prefer jq, allow python3 as fallback if NO_INSTALL is set
+  # JSON parser check: jq is required
   if command -v jq > /dev/null 2>&1; then
     log_debug "Dependency OK: jq"
   else
-    if [[ "${NO_INSTALL}" == "true" ]]; then
-      if ! command -v python3 > /dev/null 2>&1; then
-        log_error "jq not found and --no-install was specified; python3 fallback is also unavailable"
-        _log_func_exit_fail "check_dependencies" "1"
-        return 1
-      else
-        log_debug "jq not found; python3 will be used as fallback"
-      fi
-    else
-      log_warn "jq not found; it should have been installed by ensure_jq_installed()"
-      _log_func_exit_fail "check_dependencies" "1"
-      return 1
-    fi
+    log_warn "jq not found; it should have been installed by ensure_jq_installed() or present in the environment"
+    _log_func_exit_fail "check_dependencies" "1"
+    return 1
   fi
 
   _log_func_exit_ok "check_dependencies"
