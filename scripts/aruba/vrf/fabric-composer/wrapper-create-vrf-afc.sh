@@ -130,7 +130,7 @@ ARUBA_MAX_SESSIONS="${ARUBA_MAX_SESSIONS:-<%=customOptions.ARUBA_MAX_SESSIONS%>}
 ARUBA_MAX_CPS="${ARUBA_MAX_CPS:-<%=customOptions.ARUBA_MAX_CPS%>}"
 
 # Credenciais do AFC via Cypher (JSON)
-AFC_API_JSON="<%=cypher.read('AFC_API')%>"
+AFC_API_JSON="<%=cypher.read('secret/AFC_API')%>"
 
 ################################################################################
 # Constantes e arquivos de token (compartilhados com create-vrf-afc.sh)
