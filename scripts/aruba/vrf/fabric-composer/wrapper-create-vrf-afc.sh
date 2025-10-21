@@ -267,6 +267,8 @@ parse_cypher_secret() {
         return 1
     fi
 
+    log_info "JSON: $AFC_API_JSON"
+
     local cleaned trimmed
     # Remove control chars (CR, NUL, etc.)
     cleaned=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r' | tr -d '\000')
