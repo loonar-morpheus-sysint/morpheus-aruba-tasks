@@ -42,4 +42,7 @@ teardown() {
   run bash -c "source ./scripts/utilities/install-jq.sh && JQ_INSTALL_FORCE=1 ensure_jq_installed"
   [ "$status" -eq 0 ]
   [ -x "${HOME}/.local/bin/jq" ]
+  run "${HOME}/.local/bin/jq" --version
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ jq\ \(fake\) ]] || (echo "Unexpected jq output: $output"; false)
 }

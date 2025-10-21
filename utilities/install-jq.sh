@@ -48,42 +48,82 @@ ensure_jq_installed() {
     PM="brew"
   fi
 
-  # Try package manager install first
+  # Try package manager install first (non-interactive only)
   if [[ -n "${PM}" ]]; then
-    log_info "Detected package manager: ${PM}. Trying to install jq via package manager."
-    case "${PM}" in
-      apt)
-        if [[ $(id -u) -ne 0 && -n $(command -v sudo) ]]; then
-          sudo apt-get update && sudo apt-get install -y jq && return 0 || true
-        else
-          apt-get update && apt-get install -y jq && return 0 || true
-        fi
-        ;;
-      dnf)
-        if [[ $(id -u) -ne 0 && -n $(command -v sudo) ]]; then
-          sudo dnf install -y jq && return 0 || true
-        else
-          dnf install -y jq && return 0 || true
-        fi
-        ;;
-      yum)
-        if [[ $(id -u) -ne 0 && -n $(command -v sudo) ]]; then
-          sudo yum install -y jq && return 0 || true
-        else
-          yum install -y jq && return 0 || true
-        fi
-        ;;
-      apk)
-        if [[ $(id -u) -ne 0 && -n $(command -v sudo) ]]; then
-          sudo apk add --no-cache jq && return 0 || true
-        else
-          apk add --no-cache jq && return 0 || true
-        fi
-        ;;
-      brew)
-        brew install jq && return 0 || true
-        ;;
-    esac
+    log_info "Detected package manager: ${PM}. Trying to install jq via package manager (non-interactive)."
+
+    # Check for privilege to run sudo without a password
+    local can_sudo_noninteractive=0
+    if [[ $(id -u) -eq 0 ]]; then
+      can_sudo_noninteractive=1
+    elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+      can_sudo_noninteractive=1
+    fi
+
+    if [[ ${can_sudo_noninteractive} -ne 1 && "${PM}" != "brew" && "${PM}" != "apk" ]]; then
+      log_warn "Non-interactive package installation not permitted (sudo requires password). Skipping package manager install."
+    else
+      case "${PM}" in
+        apt)
+          if [[ ${can_sudo_noninteractive} -eq 1 ]]; then
+            log_info "Running apt-get non-interactively"
+            if [[ $(id -u) -ne 0 ]]; then
+              if sudo -n apt-get update -qq && sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y jq; then
+                return 0
+              fi
+            else
+              if apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y jq; then
+                return 0
+              fi
+            fi
+          fi
+          ;;
+        dnf)
+          if [[ ${can_sudo_noninteractive} -eq 1 ]]; then
+            if [[ $(id -u) -ne 0 ]]; then
+              if sudo -n dnf install -y jq; then
+                return 0
+              fi
+            else
+              if dnf install -y jq; then
+                return 0
+              fi
+            fi
+          fi
+          ;;
+        yum)
+          if [[ ${can_sudo_noninteractive} -eq 1 ]]; then
+            if [[ $(id -u) -ne 0 ]]; then
+              if sudo -n yum install -y jq; then
+                return 0
+              fi
+            else
+              if yum install -y jq; then
+                return 0
+              fi
+            fi
+          fi
+          ;;
+        apk)
+          if [[ ${can_sudo_noninteractive} -eq 1 ]]; then
+            if [[ $(id -u) -ne 0 ]]; then
+              if sudo -n apk add --no-cache jq; then
+                return 0
+              fi
+            else
+              if apk add --no-cache jq; then
+                return 0
+              fi
+            fi
+          fi
+          ;;
+        brew)
+          if brew install jq; then
+            return 0
+          fi
+          ;;
+      esac
+    fi
     log_warn "Package manager install failed or not permitted. Will try binary fallback."
   fi
 
@@ -109,7 +149,12 @@ ensure_jq_installed() {
   if [[ -n "${JQ_URL}" ]]; then
     BIN_DIR="/usr/local/bin"
     if [[ ! -w "${BIN_DIR}" ]]; then
-      BIN_DIR="${HOME}/.local/bin"
+      # Avoid duplicate .local when HOME already ends with .local
+      if [[ "${HOME}" == */.local ]]; then
+        BIN_DIR="${HOME}/bin"
+      else
+        BIN_DIR="${HOME}/.local/bin"
+      fi
       mkdir -p "${BIN_DIR}"
     fi
     TMP_FILE="${BIN_DIR}/jq"
@@ -119,10 +164,31 @@ ensure_jq_installed() {
     elif command -v wget >/dev/null 2>&1; then
       wget -qO "${TMP_FILE}" "${JQ_URL}" || true
     fi
+    post_install_verify() {
+      local exec_path="$1"
+      if [[ -x "${exec_path}" ]]; then
+        if "${exec_path}" --version >/dev/null 2>&1; then
+          log_info "Post-install: ${exec_path} --version => $(${exec_path} --version 2>/dev/null || echo 'unknown')"
+          return 0
+        fi
+      fi
+      return 1
+    }
+
     if [[ -f "${TMP_FILE}" ]]; then
       chmod +x "${TMP_FILE}" || true
       export PATH="${BIN_DIR}:${PATH}"
-      if command -v jq >/dev/null 2>&1; then
+      # Prefer PATH lookup, but verify binary directly if needed
+      if command -v jq >/dev/null 2>&1 && post_install_verify "$(command -v jq)"; then
+        log_success "jq installed at ${TMP_FILE}"
+        _log_func_exit_ok "ensure_jq_installed"
+        return 0
+      fi
+      if post_install_verify "${TMP_FILE}"; then
+        # Ensure our tmp file directory is added to PATH
+        if [[ ":$PATH:" != *":${BIN_DIR}:"* ]]; then
+          export PATH="${BIN_DIR}:${PATH}"
+        fi
         log_success "jq installed at ${TMP_FILE}"
         _log_func_exit_ok "ensure_jq_installed"
         return 0

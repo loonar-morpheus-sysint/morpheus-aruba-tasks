@@ -255,11 +255,22 @@ parse_cypher_secret() {
         return 1
     fi
 
+    # Validate the JSON payload before using jq to avoid raw parse errors
+    if ! printf '%s' "${AFC_API_JSON}" | jq -e . >/dev/null 2>&1; then
+        log_error "AFC_API cypher secret does not contain valid JSON"
+        # Print a short sanitized snippet to help debugging (do not leak secrets)
+        local snippet
+        snippet=$(printf '%s' "${AFC_API_JSON}" | sed -n '1p' | sed 's/\"/\\"/g' | cut -c1-200)
+        log_debug "AFC_API (sanitized snippet): ${snippet}"
+        _log_func_exit_fail "parse_cypher_secret" "1"
+        return 1
+    fi
+
     # Extract fields from the JSON secret using jq
-    FABRIC_COMPOSER_USERNAME=$(echo "${AFC_API_JSON}" | jq -r '.username // empty')
-    FABRIC_COMPOSER_PASSWORD=$(echo "${AFC_API_JSON}" | jq -r '.password // empty')
+    FABRIC_COMPOSER_USERNAME=$(printf '%s' "${AFC_API_JSON}" | jq -r '.username // empty')
+    FABRIC_COMPOSER_PASSWORD=$(printf '%s' "${AFC_API_JSON}" | jq -r '.password // empty')
     local url
-    url=$(echo "${AFC_API_JSON}" | jq -r '.URL // .url // empty')
+    url=$(printf '%s' "${AFC_API_JSON}" | jq -r '.URL // .url // empty')
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"

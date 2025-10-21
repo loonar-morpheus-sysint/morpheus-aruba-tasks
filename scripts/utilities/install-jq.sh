@@ -52,7 +52,7 @@ ensure_jq_installed() {
         jq_dir="/usr/local/bin"
     fi
     jq_path="${jq_dir}/jq"
-    download_url="https://github.com/stedolan/jq/releases/latest/download/jq-linux64"
+    download_url="https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
 
     # Ensure directory exists and is writable (fall back to $HOME/.local/bin if not writable)
     if ! mkdir -p "${jq_dir}" 2>/dev/null || ! touch "${jq_dir}/.write_test" 2>/dev/null; then
@@ -100,22 +100,43 @@ ensure_jq_installed() {
     fi
 
     # Ensure install dir is on PATH for current session
-    if [[ ":$PATH:" != *":$(dirname "${jq_path}"):"* ]]; then
-        local jq_dirname
-        jq_dirname=$(dirname "${jq_path}")
+    # Ensure install dir is on PATH for current session (append only if missing)
+    local jq_dirname
+    jq_dirname=$(dirname "${jq_path}")
+    if [[ ":$PATH:" != *":${jq_dirname}:"* ]]; then
         export PATH="$PATH:${jq_dirname}"
-        log_info "Added $(dirname "${jq_path}") to PATH for current session"
+        log_info "Added ${jq_dirname} to PATH for current session"
     fi
 
     # Validate installation
     # Verify installation by invoking jq without looking at a specific path
+    # Post-install verification: ensure the jq binary runs and reports a version
+    post_install_verify() {
+        local exec_path="$1"
+        if [[ -z "${exec_path}" ]]; then
+            return 1
+        fi
+        if [[ -x "${exec_path}" ]]; then
+            if "${exec_path}" --version >/dev/null 2>&1; then
+                log_info "Post-install: ${exec_path} --version => $(${exec_path} --version 2>/dev/null || echo 'unknown')"
+                return 0
+            else
+                log_warn "Post-install: ${exec_path} exists but failed to run --version"
+                return 1
+            fi
+        fi
+        return 1
+    }
     if command -v jq > /dev/null 2>&1; then
         local jq_found
         jq_found=$(command -v jq)
-        log_success "jq installed successfully and found in PATH: ${jq_found}"
-        log_info "jq --version: $(jq --version 2>/dev/null || echo 'unknown')"
-        _log_func_exit_ok "ensure_jq_installed"
-        return 0
+        if post_install_verify "${jq_found}"; then
+            log_success "jq installed successfully and found in PATH: ${jq_found}"
+            _log_func_exit_ok "ensure_jq_installed"
+            return 0
+        else
+            log_warn "jq found in PATH but post-install verification failed"
+        fi
     fi
 
     # If command -v didn't find it, but file exists and is executable, use it directly
@@ -128,8 +149,11 @@ ensure_jq_installed() {
             log_info "Added ${jq_dirname} to PATH for current session"
         fi
         if command -v jq > /dev/null 2>&1; then
-            log_success "jq now available in PATH: $(command -v jq)"
-            log_info "jq --version: $(jq --version 2>/dev/null || echo 'unknown')"
+            if post_install_verify "$(command -v jq)"; then
+                log_success "jq now available in PATH: $(command -v jq)"
+            else
+                log_warn "jq now in PATH but failed verification: $(command -v jq)"
+            fi
         else
             log_warn "jq installed at ${jq_path} but still not found in PATH"
         fi
