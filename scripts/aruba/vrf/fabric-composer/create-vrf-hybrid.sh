@@ -77,7 +77,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../lib" && pwd)/commons.sh
 ################################################################################
 
 # Operation Mode
-OPERATION_MODE=""  # "fabric-composer" or "aos-cx"
+OPERATION_MODE="" # "fabric-composer" or "aos-cx"
 
 # Common Configuration
 ENV_FILE=""
@@ -131,7 +131,7 @@ AOSCX_MAX_CPS=""
 show_usage() {
   _log_func_enter "show_usage"
 
-  cat << 'EOF'
+  cat <<'EOF'
 Usage: create-vrf-hybrid.sh --mode MODE [OPTIONS]
 
 Creates a VRF using either Fabric Composer API or AOS-CX REST API.
@@ -199,7 +199,7 @@ check_dependencies() {
   local missing=0
 
   for cmd in "${deps[@]}"; do
-    if ! command -v "${cmd}" &> /dev/null; then
+    if ! command -v "${cmd}" &>/dev/null; then
       log_error "Required dependency not found: ${cmd}"
       missing=1
     else
@@ -336,6 +336,7 @@ get_afc_token() {
     --arg password "${FABRIC_COMPOSER_PASSWORD}" \
     '{username: $username, password: $password}')
 
+  # Try JSON-body auth first
   response=$(curl -s -w "\n%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -d "${auth_payload}" \
@@ -345,26 +346,52 @@ get_afc_token() {
   http_code=$(echo "${response}" | tail -n1)
   response_body=$(echo "${response}" | sed '$d')
 
-  if [[ "${http_code}" != "200" ]]; then
-    log_error "AFC authentication failed with HTTP ${http_code}"
-    _log_func_exit_fail "get_afc_token" "1"
-    return 1
+  if [[ "${http_code}" == "200" ]]; then
+    token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
   fi
 
-  token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+  # Fallback: Basic Auth header
+  if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "400" && "${response_body}" == *"not in request headers"* ]]; then
+    log_info "Retrying AFC auth using Basic Auth in header"
+    response=$(curl -s -w "\n%{http_code}" -X POST \
+      -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+      -H "Content-Type: application/json" \
+      --insecure \
+      "${api_url}" 2>&1)
+    http_code=$(echo "${response}" | tail -n1)
+    response_body=$(echo "${response}" | sed '$d')
+    if [[ "${http_code}" == "200" ]]; then
+      token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+    fi
+  fi
+
+  # Fallback 2: GET with Basic Auth
+  if [[ -z "${token}" || "${token}" == "null" ]]; then
+    log_debug "Trying GET /auth/token with Basic Auth"
+    response=$(curl -s -w "\n%{http_code}" -X GET \
+      -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+      --insecure \
+      "${api_url}" 2>&1)
+    http_code=$(echo "${response}" | tail -n1)
+    response_body=$(echo "${response}" | sed '$d')
+    if [[ "${http_code}" == "200" ]]; then
+      token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+    fi
+  fi
 
   if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then
-    log_error "Failed to extract token from AFC response"
+    log_error "AFC authentication failed with HTTP ${http_code}"
+    log_error "Response: ${response_body}"
     _log_func_exit_fail "get_afc_token" "1"
     return 1
   fi
 
-  echo "${token}" > "${TOKEN_FILE}"
+  echo "${token}" >"${TOKEN_FILE}"
   chmod 600 "${TOKEN_FILE}"
 
   current_time=$(date +%s)
   expiry_time=$((current_time + DEFAULT_TOKEN_DURATION))
-  echo "${expiry_time}" > "${TOKEN_EXPIRY_FILE}"
+  echo "${expiry_time}" >"${TOKEN_EXPIRY_FILE}"
 
   log_success "AFC authentication token obtained"
   _log_func_exit_ok "get_afc_token"
@@ -443,7 +470,7 @@ build_afc_payload() {
   fi
 
   if [[ -n "${SWITCHES}" ]]; then
-    IFS=',' read -ra sw_array <<< "${SWITCHES}"
+    IFS=',' read -ra sw_array <<<"${SWITCHES}"
     local sw_json
     sw_json=$(printf '%s\n' "${sw_array[@]}" | jq -R . | jq -s .)
     payload=$(echo "${payload}" | jq --argjson sw "${sw_json}" '. + {switches: $sw}')
@@ -454,21 +481,21 @@ build_afc_payload() {
   fi
 
   if [[ -n "${ROUTE_TARGET_IMPORT}" ]]; then
-    IFS=',' read -ra rt_import <<< "${ROUTE_TARGET_IMPORT}"
+    IFS=',' read -ra rt_import <<<"${ROUTE_TARGET_IMPORT}"
     local rt_json
     rt_json=$(printf '%s\n' "${rt_import[@]}" | jq -R . | jq -s .)
     payload=$(echo "${payload}" | jq --argjson rt "${rt_json}" '. + {"route-target-import": $rt}')
   fi
 
   if [[ -n "${ROUTE_TARGET_EXPORT}" ]]; then
-    IFS=',' read -ra rt_export <<< "${ROUTE_TARGET_EXPORT}"
+    IFS=',' read -ra rt_export <<<"${ROUTE_TARGET_EXPORT}"
     local rt_json
     rt_json=$(printf '%s\n' "${rt_export[@]}" | jq -R . | jq -s .)
     payload=$(echo "${payload}" | jq --argjson rt "${rt_json}" '. + {"route-target-export": $rt}')
   fi
 
   if [[ -n "${ADDRESS_FAMILY}" ]]; then
-    IFS=',' read -ra af_array <<< "${ADDRESS_FAMILY}"
+    IFS=',' read -ra af_array <<<"${ADDRESS_FAMILY}"
     local af_json
     af_json=$(printf '%s\n' "${af_array[@]}" | jq -R . | jq -s .)
     payload=$(echo "${payload}" | jq --argjson af "${af_json}" '. + {"address-family": $af}')
@@ -843,131 +870,131 @@ parse_arguments() {
 
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -h|--help)
-        show_usage
-        _log_func_exit_ok "parse_arguments"
-        exit 0
-        ;;
-      --mode)
-        OPERATION_MODE="$2"
-        shift 2
-        ;;
-      -i|--interactive)
-        # INTERACTIVE_MODE=true # Unused variable removed
-        shift
-        ;;
-      -e|--env-file)
-        ENV_FILE="$2"
-        shift 2
-        ;;
-      -n|--name)
-        VRF_NAME="$2"
-        shift 2
-        ;;
-      -d|--description)
-        VRF_DESCRIPTION="$2"
-        shift 2
-        ;;
-      --dry-run)
-        DRY_RUN=true
-        shift
-        ;;
-      # Fabric Composer options
-      -f|--fabric)
-        FABRIC_NAME="$2"
-        shift 2
-        ;;
-      --switches)
-        SWITCHES="$2"
-        shift 2
-        ;;
-      -r|--rd)
-        ROUTE_DISTINGUISHER="$2"
-        shift 2
-        ;;
-      -I|--rt-import)
-        ROUTE_TARGET_IMPORT="$2"
-        shift 2
-        ;;
-      -E|--rt-export)
-        ROUTE_TARGET_EXPORT="$2"
-        shift 2
-        ;;
-      -a|--af)
-        ADDRESS_FAMILY="$2"
-        shift 2
-        ;;
-      --l3-vni)
-        L3_VNI="$2"
-        shift 2
-        ;;
-      --enable-connection-tracking)
-        ENABLE_CONNECTION_TRACKING=true
-        shift
-        ;;
-      --allow-session-reuse)
-        ALLOW_SESSION_REUSE=true
-        shift
-        ;;
-      --enable-ip-fragment-forwarding)
-        ENABLE_IP_FRAGMENT_FORWARDING=true
-        shift
-        ;;
-      # AOS-CX options
-      -s|--switch)
-        AOSCX_SWITCH="$2"
-        shift 2
-        ;;
-      --rt-mode)
-        AOSCX_RT_MODE="$2"
-        shift 2
-        ;;
-      --rt-af)
-        AOSCX_RT_AF="$2"
-        shift 2
-        ;;
-      --rt-community)
-        AOSCX_RT_COMMUNITY="$2"
-        shift 2
-        ;;
-      --bgp-bestpath)
-        AOSCX_BGP_BESTPATH=true
-        shift
-        ;;
-      --bgp-fast-fallover)
-        AOSCX_BGP_FAST_FALLOVER=true
-        shift
-        ;;
-      --bgp-trap-enable)
-        AOSCX_BGP_TRAP_ENABLE=true
-        shift
-        ;;
-      --bgp-log-neighbor-changes)
-        AOSCX_BGP_LOG_NEIGHBOR_CHANGES=true
-        shift
-        ;;
-      --bgp-deterministic-med)
-        AOSCX_BGP_DETERMINISTIC_MED=true
-        shift
-        ;;
-      --bgp-compare-med)
-        AOSCX_BGP_COMPARE_MED=true
-        shift
-        ;;
-      --max-sessions)
-        AOSCX_MAX_SESSIONS="$2"
-        shift 2
-        ;;
-      --max-cps)
-        AOSCX_MAX_CPS="$2"
-        shift 2
-        ;;
-      *)
-        log_error "Unknown parameter: $1"
-        show_usage
-        _log_func_exit_fail "parse_arguments" "1"
-        exit 1
-        ;;
+    -h | --help)
+      show_usage
+      _log_func_exit_ok "parse_arguments"
+      exit 0
+      ;;
+    --mode)
+      OPERATION_MODE="$2"
+      shift 2
+      ;;
+    -i | --interactive)
+      # INTERACTIVE_MODE=true # Unused variable removed
+      shift
+      ;;
+    -e | --env-file)
+      ENV_FILE="$2"
+      shift 2
+      ;;
+    -n | --name)
+      VRF_NAME="$2"
+      shift 2
+      ;;
+    -d | --description)
+      VRF_DESCRIPTION="$2"
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    # Fabric Composer options
+    -f | --fabric)
+      FABRIC_NAME="$2"
+      shift 2
+      ;;
+    --switches)
+      SWITCHES="$2"
+      shift 2
+      ;;
+    -r | --rd)
+      ROUTE_DISTINGUISHER="$2"
+      shift 2
+      ;;
+    -I | --rt-import)
+      ROUTE_TARGET_IMPORT="$2"
+      shift 2
+      ;;
+    -E | --rt-export)
+      ROUTE_TARGET_EXPORT="$2"
+      shift 2
+      ;;
+    -a | --af)
+      ADDRESS_FAMILY="$2"
+      shift 2
+      ;;
+    --l3-vni)
+      L3_VNI="$2"
+      shift 2
+      ;;
+    --enable-connection-tracking)
+      ENABLE_CONNECTION_TRACKING=true
+      shift
+      ;;
+    --allow-session-reuse)
+      ALLOW_SESSION_REUSE=true
+      shift
+      ;;
+    --enable-ip-fragment-forwarding)
+      ENABLE_IP_FRAGMENT_FORWARDING=true
+      shift
+      ;;
+    # AOS-CX options
+    -s | --switch)
+      AOSCX_SWITCH="$2"
+      shift 2
+      ;;
+    --rt-mode)
+      AOSCX_RT_MODE="$2"
+      shift 2
+      ;;
+    --rt-af)
+      AOSCX_RT_AF="$2"
+      shift 2
+      ;;
+    --rt-community)
+      AOSCX_RT_COMMUNITY="$2"
+      shift 2
+      ;;
+    --bgp-bestpath)
+      AOSCX_BGP_BESTPATH=true
+      shift
+      ;;
+    --bgp-fast-fallover)
+      AOSCX_BGP_FAST_FALLOVER=true
+      shift
+      ;;
+    --bgp-trap-enable)
+      AOSCX_BGP_TRAP_ENABLE=true
+      shift
+      ;;
+    --bgp-log-neighbor-changes)
+      AOSCX_BGP_LOG_NEIGHBOR_CHANGES=true
+      shift
+      ;;
+    --bgp-deterministic-med)
+      AOSCX_BGP_DETERMINISTIC_MED=true
+      shift
+      ;;
+    --bgp-compare-med)
+      AOSCX_BGP_COMPARE_MED=true
+      shift
+      ;;
+    --max-sessions)
+      AOSCX_MAX_SESSIONS="$2"
+      shift 2
+      ;;
+    --max-cps)
+      AOSCX_MAX_CPS="$2"
+      shift 2
+      ;;
+    *)
+      log_error "Unknown parameter: $1"
+      show_usage
+      _log_func_exit_fail "parse_arguments" "1"
+      exit 1
+      ;;
     esac
   done
 

@@ -366,7 +366,9 @@ authenticate_afc() {
     payload=$(jq -n --arg u "${FABRIC_COMPOSER_USERNAME}" --arg p "${FABRIC_COMPOSER_PASSWORD}" '{username:$u,password:$p}')
 
     log_info "Autenticando no AFC para obter token..."
-    local response http_code body
+    local response http_code body token
+
+    # Tentativa 1: Autenticação via corpo JSON (algumas versões do AFC aceitam)
     response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
         -H "Content-Type: application/json" \
         -d "${payload}" \
@@ -375,17 +377,42 @@ authenticate_afc() {
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | sed '$d')
 
-    if [[ "${http_code}" != "200" ]]; then
-        log_error "Falha na autenticação do AFC (HTTP ${http_code})"
-        log_error "Resposta: ${body}"
-        _log_func_exit_fail "authenticate_afc" "1"
-        return 1
+    if [[ "${http_code}" == "200" ]]; then
+        token=$(echo "${body}" | jq -r '.token // .access_token // empty')
     fi
 
-    local token
-    token=$(echo "${body}" | jq -r '.token // .access_token // empty')
+    # Tentativa 2: Fallback para Basic Auth no header (mensagem típica exige credenciais no header)
+    if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "400" && "${body}" == *"not in request headers"* ]]; then
+        log_info "Repetindo autenticação usando Basic Auth no header"
+        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+            -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+            -H "Content-Type: application/json" \
+            --insecure \
+            "${api_url}" 2>&1)
+        http_code=$(echo "${response}" | tail -n1)
+        body=$(echo "${response}" | sed '$d')
+        if [[ "${http_code}" == "200" ]]; then
+            token=$(echo "${body}" | jq -r '.token // .access_token // empty')
+        fi
+    fi
+
+    # Tentativa 3: Algumas implantações aceitam GET com Basic Auth
     if [[ -z "${token}" || "${token}" == "null" ]]; then
-        log_error "Não foi possível extrair o token de autenticação"
+        log_debug "Tentando GET /auth/token com Basic Auth"
+        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
+            -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+            --insecure \
+            "${api_url}" 2>&1)
+        http_code=$(echo "${response}" | tail -n1)
+        body=$(echo "${response}" | sed '$d')
+        if [[ "${http_code}" == "200" ]]; then
+            token=$(echo "${body}" | jq -r '.token // .access_token // empty')
+        fi
+    fi
+
+    if [[ -z "${token}" || "${token}" == "null" ]]; then
+        log_error "Falha na autenticação do AFC (HTTP ${http_code})"
+        log_error "Resposta: ${body}"
         _log_func_exit_fail "authenticate_afc" "1"
         return 1
     fi

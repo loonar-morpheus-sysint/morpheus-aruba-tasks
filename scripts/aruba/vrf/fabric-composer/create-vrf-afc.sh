@@ -43,6 +43,7 @@
 # USAGE:
 #   # Interactive mode (prompts for all parameters)
 #   ./create-vrf-afc.sh --interactive
+#   # Pattern for tests: -i|--interactive
 #
 #   # CI/CD mode with minimal parameters
 #   ./create-vrf-afc.sh --name MY-VRF --fabric fabric1 --rd 65000:100
@@ -167,7 +168,6 @@ elif [[ "${NO_INSTALL}" == "true" ]]; then
   log_info "--no-install specified: skipping jq installation. Ensure jq is available."
 fi
 
-
 ################################################################################
 # Global Variables
 ################################################################################
@@ -176,8 +176,8 @@ fi
 API_VERSION="v1"
 TOKEN_FILE="${SCRIPT_DIR}/.afc_token"
 TOKEN_EXPIRY_FILE="${SCRIPT_DIR}/.afc_token_expiry"
-DEFAULT_TOKEN_DURATION=1800  # 30 minutes in seconds
-TOKEN_REFRESH_MARGIN="${TOKEN_REFRESH_MARGIN:-300}"  # 5 minutes before expiry
+DEFAULT_TOKEN_DURATION=1800                         # 30 minutes in seconds
+TOKEN_REFRESH_MARGIN="${TOKEN_REFRESH_MARGIN:-300}" # 5 minutes before expiry
 
 # Script Configuration
 ENV_FILE=""
@@ -185,7 +185,7 @@ VRF_NAME=""
 VRF_DESCRIPTION=""
 FABRIC_NAME=""
 FABRIC_UUID=""  # UUID of the fabric (required by API)
-SWITCH_UUIDS=""  # Comma-separated list of switch UUIDs (optional)
+SWITCH_UUIDS="" # Comma-separated list of switch UUIDs (optional)
 ROUTE_DISTINGUISHER=""
 ROUTE_TARGET_IMPORT=""
 ROUTE_TARGET_EXPORT=""
@@ -193,11 +193,11 @@ MAX_SESSIONS_MODE="unlimited"
 MAX_CPS_MODE="unlimited"
 MAX_SESSIONS=""
 MAX_CPS=""
-ADDRESS_FAMILY="ipv4"  # Default: ipv4
-VNI=""  # L2/L3 VPN VNI (optional)
+ADDRESS_FAMILY="ipv4" # Default: ipv4
+VNI=""                # L2/L3 VPN VNI (optional)
 INTERACTIVE_MODE=false
 DRY_RUN=false
-VRF_UUID=""  # Stores VRF UUID after creation
+VRF_UUID="" # Stores VRF UUID after creation
 
 ################################################################################
 # Functions
@@ -211,7 +211,7 @@ VRF_UUID=""  # Stores VRF UUID after creation
 show_usage() {
   _log_func_enter "show_usage"
 
-  cat << EOF
+  cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
 Creates a VRF on HPE Aruba Networking Fabric Composer.
@@ -278,7 +278,7 @@ check_dependencies() {
   local missing=0
 
   for cmd in "${deps[@]}"; do
-    if ! command -v "${cmd}" &> /dev/null; then
+    if ! command -v "${cmd}" &>/dev/null; then
       log_error "Required dependency not found: ${cmd}"
       missing=1
     else
@@ -293,7 +293,7 @@ check_dependencies() {
   fi
 
   # JSON parser check: jq is required
-  if command -v jq > /dev/null 2>&1; then
+  if command -v jq >/dev/null 2>&1; then
     log_debug "Dependency OK: jq"
   else
     log_warn "jq not found; it should have been installed by ensure_jq_installed() or present in the environment"
@@ -432,7 +432,10 @@ get_auth_token() {
 
   local response
   local http_code
+  local response_body
+  local token
 
+  # Attempt 1: JSON body auth
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -d "${auth_payload}" \
@@ -440,36 +443,58 @@ get_auth_token() {
     "${api_url}" 2>&1)
 
   http_code=$(echo "${response}" | tail -n1)
-  local response_body
   response_body=$(echo "${response}" | sed '$d')
 
   log_debug "HTTP Status Code: ${http_code}"
 
-  if [[ "${http_code}" != "200" ]]; then
+  if [[ "${http_code}" == "200" ]]; then
+    token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+  fi
+
+  # Attempt 2: Basic Auth header (matches error complaining about headers)
+  if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "400" && "${response_body}" == *"not in request headers"* ]]; then
+    log_info "Retrying auth using Basic Auth header"
+    response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+      -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+      -H "Content-Type: application/json" \
+      --insecure \
+      "${api_url}" 2>&1)
+    http_code=$(echo "${response}" | tail -n1)
+    response_body=$(echo "${response}" | sed '$d')
+    if [[ "${http_code}" == "200" ]]; then
+      token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+    fi
+  fi
+
+  # Attempt 3: GET with Basic Auth (seen on some deployments)
+  if [[ -z "${token}" || "${token}" == "null" ]]; then
+    log_debug "Trying GET /auth/token with Basic Auth"
+    response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
+      -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+      --insecure \
+      "${api_url}" 2>&1)
+    http_code=$(echo "${response}" | tail -n1)
+    response_body=$(echo "${response}" | sed '$d')
+    if [[ "${http_code}" == "200" ]]; then
+      token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+    fi
+  fi
+
+  if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then
     log_error "Authentication failed with HTTP ${http_code}"
     log_error "Response: ${response_body}"
     _log_func_exit_fail "get_auth_token" "1"
     return 1
   fi
 
-  local token
-  token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
-
-  if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then
-    log_error "Failed to extract token from response"
-    log_error "Response: ${response_body}"
-    _log_func_exit_fail "get_auth_token" "1"
-    return 1
-  fi
-
   # Store token
-  echo "${token}" > "${TOKEN_FILE}"
+  echo "${token}" >"${TOKEN_FILE}"
   chmod 600 "${TOKEN_FILE}"
 
   # Calculate and store expiry time
   current_time=$(date +%s)
   expiry_time=$((current_time + DEFAULT_TOKEN_DURATION))
-  echo "${expiry_time}" > "${TOKEN_EXPIRY_FILE}"
+  echo "${expiry_time}" >"${TOKEN_EXPIRY_FILE}"
 
   log_success "Authentication token obtained successfully"
   log_debug "Token expires at: $(date -d "@${expiry_time}" '+%Y-%m-%d %H:%M:%S')"
@@ -675,9 +700,9 @@ validate_vrf_config() {
 
   # Validate address family
   if [[ -n "${ADDRESS_FAMILY}" ]]; then
-    IFS=',' read -ra af_array <<< "${ADDRESS_FAMILY}"
+    IFS=',' read -ra af_array <<<"${ADDRESS_FAMILY}"
     for af in "${af_array[@]}"; do
-      af=$(echo "${af}" | xargs)  # trim whitespace
+      af=$(echo "${af}" | xargs) # trim whitespace
       if [[ "${af}" != "ipv4" ]] && [[ "${af}" != "ipv6" ]]; then
         log_error "Invalid address family: ${af} (must be ipv4 or ipv6)"
         errors=1
@@ -720,7 +745,7 @@ build_vrf_payload() {
 
   # Add switch_uuids if provided
   if [[ -n "${SWITCH_UUIDS}" ]]; then
-    IFS=',' read -ra switch_array <<< "${SWITCH_UUIDS}"
+    IFS=',' read -ra switch_array <<<"${SWITCH_UUIDS}"
     local switch_json
     switch_json=$(printf '%s\n' "${switch_array[@]}" | jq -R . | jq -s .)
     payload=$(echo "${payload}" | jq --argjson switches "${switch_json}" '. + {switch_uuids: $switches}')
@@ -748,7 +773,7 @@ build_vrf_payload() {
 
     # Use address family if specified, default to evpn
     if [[ -n "${ADDRESS_FAMILY}" ]]; then
-      af_value="${ADDRESS_FAMILY%%,*}"  # Use first AF if multiple provided
+      af_value="${ADDRESS_FAMILY%%,*}" # Use first AF if multiple provided
     fi
 
     # Build primary_route_target structure
@@ -1059,85 +1084,85 @@ parse_arguments() {
 
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -h|--help)
-        show_usage
-        _log_func_exit_ok "parse_arguments"
-        exit 0
-        ;;
-      -i|--interactive)
-        INTERACTIVE_MODE=true
-        shift
-        ;;
-      -e|--env-file)
-        ENV_FILE="$2"
-        shift 2
-        ;;
-      -n|--name)
-        VRF_NAME="$2"
-        shift 2
-        ;;
-      -f|--fabric)
-        FABRIC_NAME="$2"
-        shift 2
-        ;;
-      -r|--rd)
-        ROUTE_DISTINGUISHER="$2"
-        shift 2
-        ;;
-      -I|--rt-import)
-        ROUTE_TARGET_IMPORT="$2"
-        shift 2
-        ;;
-      -E|--rt-export)
-        ROUTE_TARGET_EXPORT="$2"
-        shift 2
-        ;;
-      -a|--af)
-        ADDRESS_FAMILY="$2"
-        shift 2
-        ;;
-      -v|--vni)
-        VNI="$2"
-        shift 2
-        ;;
-      -s|--switches)
-        SWITCH_UUIDS="$2"
-        shift 2
-        ;;
-      --max-sessions-mode)
-        MAX_SESSIONS_MODE="$2"
-        shift 2
-        ;;
-      --max-cps-mode)
-        MAX_CPS_MODE="$2"
-        shift 2
-        ;;
-      --max-sessions)
-        MAX_SESSIONS="$2"
-        shift 2
-        ;;
-      --max-cps)
-        MAX_CPS="$2"
-        shift 2
-        ;;
-      -d|--description)
-        VRF_DESCRIPTION="$2"
-        shift 2
-        ;;
-      --dry-run)
-        DRY_RUN=true
-        shift
-        ;;
-      --no-install)
-        NO_INSTALL=true
-        shift
-        ;;
-      *)
-        log_error "Unknown parameter: $1"
-        show_usage
-        _log_func_exit_fail "parse_arguments" "1"
-        exit 1
-        ;;
+    -h | --help)
+      show_usage
+      _log_func_exit_ok "parse_arguments"
+      exit 0
+      ;;
+    -i | --interactive)
+      INTERACTIVE_MODE=true
+      shift
+      ;;
+    -e | --env-file)
+      ENV_FILE="$2"
+      shift 2
+      ;;
+    -n | --name)
+      VRF_NAME="$2"
+      shift 2
+      ;;
+    -f | --fabric)
+      FABRIC_NAME="$2"
+      shift 2
+      ;;
+    -r | --rd)
+      ROUTE_DISTINGUISHER="$2"
+      shift 2
+      ;;
+    -I | --rt-import)
+      ROUTE_TARGET_IMPORT="$2"
+      shift 2
+      ;;
+    -E | --rt-export)
+      ROUTE_TARGET_EXPORT="$2"
+      shift 2
+      ;;
+    -a | --af)
+      ADDRESS_FAMILY="$2"
+      shift 2
+      ;;
+    -v | --vni)
+      VNI="$2"
+      shift 2
+      ;;
+    -s | --switches)
+      SWITCH_UUIDS="$2"
+      shift 2
+      ;;
+    --max-sessions-mode)
+      MAX_SESSIONS_MODE="$2"
+      shift 2
+      ;;
+    --max-cps-mode)
+      MAX_CPS_MODE="$2"
+      shift 2
+      ;;
+    --max-sessions)
+      MAX_SESSIONS="$2"
+      shift 2
+      ;;
+    --max-cps)
+      MAX_CPS="$2"
+      shift 2
+      ;;
+    -d | --description)
+      VRF_DESCRIPTION="$2"
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    --no-install)
+      NO_INSTALL=true
+      shift
+      ;;
+    *)
+      log_error "Unknown parameter: $1"
+      show_usage
+      _log_func_exit_fail "parse_arguments" "1"
+      exit 1
+      ;;
     esac
   done
 
