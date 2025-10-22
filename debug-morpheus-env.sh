@@ -64,4 +64,26 @@ curl -skv -w "\nHTTP_CODE=%{http_code}\n" -X POST \
   "https://${AFC_HOST}/api/v1/auth/token" 2>&1 | head -80
 
 echo ""
+echo "10b. Curl test AUTH usando CN do certificado (vhost) com --resolve:"
+# Extrair o CN do certificado do servidor (primeiro certificado apresentado)
+cert_cn="$(
+  timeout 3 openssl s_client -servername "${AFC_HOST}" -connect "${AFC_HOST}:443" </dev/null 2>/dev/null |
+    awk '/BEGIN CERTIFICATE/{flag=1} flag{print} /END CERTIFICATE/{flag=0; exit}' |
+    openssl x509 -noout -subject -nameopt RFC2253 2>/dev/null |
+    sed -E 's#.*CN=([^,/]+).*#\1#'
+)"
+
+if [[ -n "${cert_cn}" && "${cert_cn}" != "${AFC_HOST}" ]]; then
+  echo "[info] Detected cert CN: ${cert_cn} — testing with virtual host routing"
+  curl -skv --resolve "${cert_cn}:443:${AFC_HOST}" -w "\nHTTP_CODE=%{http_code}\n" -X POST \
+    -H "X-Auth-Username: ${AFC_USER}" \
+    -H "X-Auth-Password: ${AFC_PASS}" \
+    -H "Content-Type: application/json" \
+    -d '{"token-lifetime":30}' \
+    "https://${cert_cn}/api/v1/auth/token" 2>&1 | head -80
+else
+  echo "[warn] Could not determine a certificate CN different from target; skipping vhost test"
+fi
+
+echo ""
 echo "=== END DIAGNOSTICS ==="
