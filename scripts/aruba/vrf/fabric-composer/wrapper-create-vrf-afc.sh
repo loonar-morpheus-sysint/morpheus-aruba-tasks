@@ -373,7 +373,18 @@ authenticate_afc() {
 
     local response http_code body token=""
 
-    # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
+    # Debug crítico: verificar se credenciais foram extraídas corretamente
+    if [[ -z "${FABRIC_COMPOSER_USERNAME}" ]]; then
+        log_error "FABRIC_COMPOSER_USERNAME está vazio após extract_json!"
+        _log_func_exit_fail "authenticate_afc" "1"
+        return 1
+    fi
+    if [[ -z "${FABRIC_COMPOSER_PASSWORD}" ]]; then
+        log_error "FABRIC_COMPOSER_PASSWORD está vazio após extract_json!"
+        _log_func_exit_fail "authenticate_afc" "1"
+        return 1
+    fi
+    log_debug "Credenciais extraídas: username=${FABRIC_COMPOSER_USERNAME} (length=${#FABRIC_COMPOSER_USERNAME}), password length=${#FABRIC_COMPOSER_PASSWORD}" # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
     # Limpar variáveis de proxy para garantir conexão direta (mesmo padrão do test-afc-auth.sh)
     response=$(unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy &&
         curl -sk -w "\n%{http_code}" -X POST \
