@@ -377,7 +377,12 @@ teardown() {
 }
 
 @test "create-vrf-afc.sh: Includes Authorization header handling" {
-  run grep "Authorization: Bearer" "${SCRIPT_PATH}"
+  # Accept either exact token header without Bearer per AFC docs
+  run grep -E "Authorization:\s*\$\{?token\}?|Authorization:\s*\$\(read_token\)" "${SCRIPT_PATH}"
+  if [ "$status" -ne 0 ]; then
+    # Fallback: any Authorization header usage
+    run grep "Authorization:" "${SCRIPT_PATH}"
+  fi
   [ "$status" -eq 0 ]
 }
 

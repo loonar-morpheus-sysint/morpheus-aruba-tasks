@@ -27,7 +27,7 @@ _resolve_script_dir() {
             source_path="$(pwd)/${source_path}"
         else
             # Pode estar no PATH (invocado como comando sem /) - tentar resolver.
-            local resolved
+            token=$(echo "${body}" | jq -r '.result // empty')
             resolved=$(command -v -- "${source_path}" 2>/dev/null || true)
             if [[ -n "${resolved}" ]]; then
                 source_path="${resolved}"
@@ -43,39 +43,7 @@ _resolve_script_dir() {
         source_path=$(readlink -f -- "${source_path}" 2>/dev/null || echo "${source_path}")
     fi
 
-    printf '%s' "$(cd "$(dirname "${source_path}")" && pwd)"
-}
-
-_find_lib_dir() {
-    # Walk up parent directories from the script dir to find lib/commons.sh
-    local dir
-    dir="$(_resolve_script_dir)"
-    while [[ -n "${dir}" && "${dir}" != "/" ]]; do
-        if [[ -f "${dir}/lib/commons.sh" ]]; then
-            printf '%s' "${dir}/lib"
-            return 0
-        fi
-        dir="$(dirname "${dir}")"
-    done
-
-    # Fallback: check current working directory
-    if [[ -f "$(pwd)/lib/commons.sh" ]]; then
-        printf '%s' "$(pwd)/lib"
-        return 0
-    fi
-
-    # Last-resort heuristic (same as older behavior), normalize the path
-    local candidate
-    candidate="$(_resolve_script_dir)/../../../../lib"
-    if command -v readlink >/dev/null 2>&1; then
-        candidate=$(readlink -f -- "${candidate}" 2>/dev/null || echo "${candidate}")
-    fi
-    if [[ -f "${candidate}/commons.sh" ]]; then
-        printf '%s' "${candidate}"
-        return 0
-    fi
-
-    return 1
+    token=$(echo "${body}" | jq -r '.result // empty')
 }
 
 LIB_DIR="$(_find_lib_dir)"
@@ -361,53 +329,79 @@ validate_required_inputs() {
 authenticate_afc() {
     _log_func_enter "authenticate_afc"
 
-    local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
-    local payload
-    payload=$(jq -n --arg u "${FABRIC_COMPOSER_USERNAME}" --arg p "${FABRIC_COMPOSER_PASSWORD}" '{username:$u,password:$p}')
+    local api_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
+    local api_url_1="${api_base}"
+    local api_url_2="${api_base}/" # algumas instâncias exigem barra final
 
-    log_info "Autenticando no AFC para obter token..."
+    # token-lifetime em minutos (doc: padrão 30m). Nosso DEFAULT_TOKEN_DURATION é em segundos.
+    local token_lifetime_min
+    token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
+
+    log_info "Autenticando no AFC para obter token (headers X-Auth-Username/X-Auth-Password)..."
     # Inicialize 'token' para evitar erro com 'set -u' ao checar variáveis não definidas
     local response http_code body token=""
 
-    # Tentativa 1: Autenticação via corpo JSON (algumas versões do AFC aceitam)
+    # Tentativa 1: Conforme documentação oficial — POST com headers X-Auth-Username / X-Auth-Password
     response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+        -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
+        -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
         -H "Content-Type: application/json" \
-        -d "${payload}" \
+        -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
         --insecure \
-        "${api_url}" 2>&1)
+        "${api_url_1}" 2>&1)
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | sed '$d')
 
     if [[ "${http_code}" == "200" ]]; then
-        token=$(echo "${body}" | jq -r '.token // .access_token // empty')
+        token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
     fi
 
-    # Tentativa 2: Fallback para Basic Auth no header (mensagem típica exige credenciais no header)
-    if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "400" && "${body}" == *"not in request headers"* ]]; then
-        log_info "Repetindo autenticação usando Basic Auth no header"
+    # Tentativa 1b: repetir com barra final no endpoint (compatibilidade)
+    if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "405" || "${http_code}" == "404" ]]; then
+        log_debug "Tentando novamente com barra final no endpoint /auth/token/"
+        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+            -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
+            -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
+            --insecure \
+            "${api_url_2}" 2>&1)
+        http_code=$(echo "${response}" | tail -n1)
+        body=$(echo "${response}" | sed '$d')
+        if [[ "${http_code}" == "200" ]]; then
+            token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
+        fi
+    fi
+
+    # Tentativa 2: Fallback legado — POST com corpo JSON (algumas versões aceitam)
+    if [[ -z "${token}" || "${token}" == "null" ]]; then
+        log_debug "Tentando POST com corpo JSON username/password (fallback legado)"
+        local payload
+        payload=$(jq -n --arg u "${FABRIC_COMPOSER_USERNAME}" --arg p "${FABRIC_COMPOSER_PASSWORD}" '{username:$u,password:$p}')
+        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d "${payload}" \
+            --insecure \
+            "${api_url_1}" 2>&1)
+        http_code=$(echo "${response}" | tail -n1)
+        body=$(echo "${response}" | sed '$d')
+        if [[ "${http_code}" == "200" ]]; then
+            token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
+        fi
+    fi
+
+    # Tentativa 3: Fallback adicional — Basic Auth
+    if [[ -z "${token}" || "${token}" == "null" ]]; then
+        log_debug "Tentando POST com Basic Auth no header (fallback)"
         response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
             -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
             -H "Content-Type: application/json" \
             --insecure \
-            "${api_url}" 2>&1)
+            "${api_url_1}" 2>&1)
         http_code=$(echo "${response}" | tail -n1)
         body=$(echo "${response}" | sed '$d')
         if [[ "${http_code}" == "200" ]]; then
-            token=$(echo "${body}" | jq -r '.token // .access_token // empty')
-        fi
-    fi
-
-    # Tentativa 3: Algumas implantações aceitam GET com Basic Auth
-    if [[ -z "${token}" || "${token}" == "null" ]]; then
-        log_debug "Tentando GET /auth/token com Basic Auth"
-        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
-            -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
-            --insecure \
-            "${api_url}" 2>&1)
-        http_code=$(echo "${response}" | tail -n1)
-        body=$(echo "${response}" | sed '$d')
-        if [[ "${http_code}" == "200" ]]; then
-            token=$(echo "${body}" | jq -r '.token // .access_token // empty')
+            token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
         fi
     fi
 

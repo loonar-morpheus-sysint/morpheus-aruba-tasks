@@ -423,24 +423,27 @@ get_auth_token() {
 
   log_info "Obtaining new authentication token..."
 
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
-  local auth_payload
-  auth_payload=$(jq -n \
-    --arg username "${FABRIC_COMPOSER_USERNAME}" \
-    --arg password "${FABRIC_COMPOSER_PASSWORD}" \
-    '{username: $username, password: $password}')
+  local api_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
+  local api_url_1="${api_base}"
+  local api_url_2="${api_base}/" # compatibility: trailing slash variant
+
+  # token-lifetime in minutes; DEFAULT_TOKEN_DURATION is seconds
+  local token_lifetime_min
+  token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
 
   local response
   local http_code
   local response_body
   local token=""
 
-  # Attempt 1: JSON body auth
+  # Attempt 1: Per official docs — POST with X-Auth-Username/X-Auth-Password headers
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+    -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
+    -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
     -H "Content-Type: application/json" \
-    -d "${auth_payload}" \
+    -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
     --insecure \
-    "${api_url}" 2>&1)
+    "${api_url_1}" 2>&1)
 
   http_code=$(echo "${response}" | tail -n1)
   response_body=$(echo "${response}" | sed '$d')
@@ -448,37 +451,27 @@ get_auth_token() {
   log_debug "HTTP Status Code: ${http_code}"
 
   if [[ "${http_code}" == "200" ]]; then
-    token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+    token=$(echo "${response_body}" | jq -r '.result // .token // .access_token // empty')
   fi
 
-  # Attempt 2: Basic Auth header (matches error complaining about headers)
-  if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "400" && "${response_body}" == *"not in request headers"* ]]; then
-    log_info "Retrying auth using Basic Auth header"
+  # Attempt 1b: Retry with trailing slash if 404/405 or empty token
+  if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "405" || "${http_code}" == "404" ]]; then
+    log_debug "Retrying auth with trailing slash /auth/token/"
     response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
-      -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
+      -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
+      -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
       -H "Content-Type: application/json" \
+      -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
       --insecure \
-      "${api_url}" 2>&1)
+      "${api_url_2}" 2>&1)
     http_code=$(echo "${response}" | tail -n1)
     response_body=$(echo "${response}" | sed '$d')
     if [[ "${http_code}" == "200" ]]; then
-      token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
+      token=$(echo "${response_body}" | jq -r '.result // .token // .access_token // empty')
     fi
   fi
 
-  # Attempt 3: GET with Basic Auth (seen on some deployments)
-  if [[ -z "${token}" || "${token}" == "null" ]]; then
-    log_debug "Trying GET /auth/token with Basic Auth"
-    response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
-      -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
-      --insecure \
-      "${api_url}" 2>&1)
-    http_code=$(echo "${response}" | tail -n1)
-    response_body=$(echo "${response}" | sed '$d')
-    if [[ "${http_code}" == "200" ]]; then
-      token=$(echo "${response_body}" | jq -r '.token // .access_token // empty')
-    fi
-  fi
+  # No legacy fallbacks: follow official docs strictly
 
   if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then
     log_error "Authentication failed with HTTP ${http_code}"
@@ -561,7 +554,8 @@ get_fabric_uuid() {
 
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${token}" \
+    -H "Authorization: ${token}" \
+    -H "X-Auth-Refresh-Token: true" \
     --insecure \
     "${api_url}" 2>&1)
 
@@ -633,7 +627,8 @@ get_fabric_switches() {
 
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${token}" \
+    -H "Authorization: ${token}" \
+    -H "X-Auth-Refresh-Token: true" \
     --insecure \
     "${api_url}" 2>&1)
 
@@ -897,7 +892,8 @@ create_vrf() {
 
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
     -H "Content-Type: application/json; version=1.0" \
-    -H "Authorization: Bearer ${token}" \
+    -H "Authorization: ${token}" \
+    -H "X-Auth-Refresh-Token: true" \
     -d "${payload}" \
     --insecure \
     "${api_url}" 2>&1)
@@ -997,7 +993,8 @@ apply_vrf() {
 
   response=$(curl --max-time 30 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
     -H "Content-Type: application/json; version=1.0" \
-    -H "Authorization: Bearer ${token}" \
+    -H "Authorization: ${token}" \
+    -H "X-Auth-Refresh-Token: true" \
     -d "${reapply_payload}" \
     --insecure \
     "${api_url}" 2>&1)
