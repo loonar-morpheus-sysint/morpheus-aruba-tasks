@@ -331,12 +331,9 @@ get_afc_token() {
   local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
   log_debug "URL: ${api_url}"
-  log_debug "Username: ${FABRIC_COMPOSER_USERNAME}"
   log_debug "Pattern: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
 
-  local response http_code response_body token="" current_time expiry_time
-
-  # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
+  local response http_code response_body token="" current_time expiry_time # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
   response=$(curl -sk -w "\n%{http_code}" -X POST \
     -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
     -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \

@@ -298,10 +298,11 @@ parse_cypher_secret() {
     fi
 
     # Extract fields using extract_json function (same pattern as working project)
-    FABRIC_COMPOSER_USERNAME="$(extract_json "$AFC_API_JSON" "username")"
-    FABRIC_COMPOSER_PASSWORD="$(extract_json "$AFC_API_JSON" "password")"
+    # Redirect stderr to /dev/null to suppress debug logs during command substitution
+    FABRIC_COMPOSER_USERNAME="$(extract_json "$AFC_API_JSON" "username" 2>/dev/null)"
+    FABRIC_COMPOSER_PASSWORD="$(extract_json "$AFC_API_JSON" "password" 2>/dev/null)"
     local url
-    url="$(extract_json "$AFC_API_JSON" "URL")"
+    url="$(extract_json "$AFC_API_JSON" "URL" 2>/dev/null)"
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"
@@ -365,7 +366,6 @@ authenticate_afc() {
 
     log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
     log_debug "URL: ${api_url}"
-    log_debug "Username: ${FABRIC_COMPOSER_USERNAME}"
     log_debug "Padrão: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
 
     local response http_code body token=""
