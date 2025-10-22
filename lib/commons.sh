@@ -47,7 +47,7 @@ NC='\033[0m' # No Color
 # Parse LOG_VIEW from .env and store in array
 # Format: "debug, info, notice, warn, err, crit, alert, emerg"
 if [[ -n "${LOG_VIEW:-}" ]]; then
-    IFS=',' read -ra LOG_VIEW_ARRAY <<< "${LOG_VIEW}"
+    IFS=',' read -ra LOG_VIEW_ARRAY <<<"${LOG_VIEW}"
     # Trim whitespace from each element
     for i in "${!LOG_VIEW_ARRAY[@]}"; do
         # shellcheck disable=SC2004  # Array index doesn't need arithmetic expansion
@@ -227,30 +227,30 @@ check_os() {
         . /etc/os-release
         # shellcheck disable=SC2154  # ID is defined in /etc/os-release
         case "${ID}" in
-            ubuntu)
-                echo "ubuntu"
-                return 0
-                ;;
-            debian)
-                echo "debian"
-                return 0
-                ;;
-            centos)
-                echo "centos"
-                return 0
-                ;;
-            rhel)
-                echo "rhel"
-                return 0
-                ;;
-            fedora)
-                echo "fedora"
-                return 0
-                ;;
-            *)
-                echo "unknown"
-                return 1
-                ;;
+        ubuntu)
+            echo "ubuntu"
+            return 0
+            ;;
+        debian)
+            echo "debian"
+            return 0
+            ;;
+        centos)
+            echo "centos"
+            return 0
+            ;;
+        rhel)
+            echo "rhel"
+            return 0
+            ;;
+        fedora)
+            echo "fedora"
+            return 0
+            ;;
+        *)
+            echo "unknown"
+            return 1
+            ;;
         esac
     else
         echo "unknown"
@@ -279,24 +279,24 @@ install_deps() {
     log_info "Installing dependencies: ${packages[*]}"
 
     case "${os_type}" in
-        ubuntu|debian)
-            sudo apt-get update -qq || return 1
-            sudo apt-get install -y "${packages[@]}" || return 1
-            ;;
-        centos|rhel|fedora)
-            sudo yum install -y "${packages[@]}" || return 1
-            ;;
-        macos)
-            if ! check_installed brew; then
-                log_error "Homebrew is required but not installed. Please install from https://brew.sh"
-                return 1
-            fi
-            brew install "${packages[@]}" || return 1
-            ;;
-        *)
-            log_error "Unsupported operating system: ${os_type}"
+    ubuntu | debian)
+        sudo apt-get update -qq || return 1
+        sudo apt-get install -y "${packages[@]}" || return 1
+        ;;
+    centos | rhel | fedora)
+        sudo yum install -y "${packages[@]}" || return 1
+        ;;
+    macos)
+        if ! check_installed brew; then
+            log_error "Homebrew is required but not installed. Please install from https://brew.sh"
             return 1
-            ;;
+        fi
+        brew install "${packages[@]}" || return 1
+        ;;
+    *)
+        log_error "Unsupported operating system: ${os_type}"
+        return 1
+        ;;
     esac
 
     return 0
@@ -342,5 +342,51 @@ verify_installation() {
         log_info "${command_name} is available (version info not accessible)"
     fi
 
+    return 0
+}
+
+#######################################
+# Extract a value from a JSON object string by key.
+# Supports inputs wrapped in single quotes (common in Morpheus here-docs).
+# Arguments:
+#   $1 - JSON string (may be surrounded by single quotes)
+#   $2 - Key to extract
+# Outputs:
+#   Writes the value to stdout on success
+# Returns:
+#   0 on success, 1 on failure
+#######################################
+extract_json() {
+    _log_func_enter "extract_json"
+
+    local json_data="${1:-}"
+    local json_key="${2:-}"
+
+    if [[ -z "${json_key}" ]]; then
+        log_error "extract_json: key not provided"
+        _log_func_exit_fail "extract_json" "1"
+        return 1
+    fi
+
+    # Strip a single pair of surrounding single quotes, if present
+    local json_cleaned
+    json_cleaned=$(printf '%s' "${json_data}" | sed "s/^'//;s/'$//")
+
+    # Use jq to extract key; suppress errors to avoid leaking content
+    local value
+    if ! value=$(printf '%s' "${json_cleaned}" | jq -r --arg key "${json_key}" '.[$key] // empty' 2>/dev/null); then
+        log_error "extract_json: invalid JSON input"
+        _log_func_exit_fail "extract_json" "1"
+        return 1
+    fi
+
+    if [[ -z "${value}" ]]; then
+        log_error "extract_json: key '${json_key}' not found"
+        _log_func_exit_fail "extract_json" "1"
+        return 1
+    fi
+
+    printf '%s\n' "${value}"
+    _log_func_exit_ok "extract_json"
     return 0
 }

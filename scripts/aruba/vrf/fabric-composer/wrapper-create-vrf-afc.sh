@@ -85,9 +85,7 @@ if [[ -z "${LIB_DIR}" ]]; then
 fi
 source "${LIB_DIR}/commons.sh"
 
-# Source extract_json function
-# shellcheck disable=SC1091
-source "$(_resolve_script_dir)/extract_json.sh"
+# extract_json() is provided by lib/commons.sh
 
 # Pre-scan arguments for --no-install
 NO_INSTALL=false
