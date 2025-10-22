@@ -164,17 +164,30 @@ ARUBA_MAX_SESSIONS="${ARUBA_MAX_SESSIONS:-<%=customOptions.ARUBA_MAX_SESSIONS%>}
 ARUBA_MAX_CPS="${ARUBA_MAX_CPS:-<%=customOptions.ARUBA_MAX_CPS%>}"
 
 # Credenciais do AFC via Cypher (JSON)
-# Usa here-doc com single-quoted template para renderização do Morpheus
-# Padrão: MORPHEUS_SECRET_API=$(cat <<EOF
-#         '<%=cypher.read("secret/Morpheus-api")%>'
-#         EOF
-#         )
+# Importante: o Morpheus renderiza expressões de template em qualquer lugar do
+# script (inclusive comentários). Evite colocar exemplos dessa sintaxe nos
+# comentários. Consulte a documentação oficial sobre renderização de templates:
+# https://support.hpe.com/hpesc/public/docDisplay?docId=sd00006774en_us&page=GUID-2CE25FBB-DE0F-4B4C-8FF7-07535555A706.html
+#
 # Honra variável de ambiente se já definida (útil para testes locais)
+# Estratégia robusta no Morpheus:
+#  1) Preferir Base64 para evitar problemas de novas linhas/CR e delimitadores de here-doc
+#  2) Fallback: here-doc com delimitador improvável e delimitador protegido
 if [[ -z "${AFC_API_JSON:-}" ]]; then
+    # Base64-safe render (quando executado no Morpheus)
+    AFC_API_JSON_B64="${AFC_API_JSON_B64:-<%=java.util.Base64.getEncoder().encodeToString(cypher.read('secret/AFC_API').getBytes('UTF-8'))%>}"
+    if [[ -n "${AFC_API_JSON_B64}" && "${AFC_API_JSON_B64}" != *"cypher.read"* ]]; then
+        AFC_API_JSON=$(printf '%s' "${AFC_API_JSON_B64}" | base64 -d 2>/dev/null || true)
+        # Remover CR se houver
+        AFC_API_JSON=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r')
+    fi
+fi
+if [[ -z "${AFC_API_JSON:-}" ]]; then
+    # Fallback here-doc
     AFC_API_JSON=$(
-        cat <<EOF
+        cat <<'__AFC_CYPHER__'
 '<%=cypher.read("secret/AFC_API")%>'
-EOF
+__AFC_CYPHER__
     )
 fi
 
