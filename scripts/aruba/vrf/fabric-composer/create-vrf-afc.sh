@@ -425,9 +425,9 @@ get_auth_token() {
 
   local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
-  # Exato padrão do test-afc-auth.sh (TESTE_OK=1) que funcionou
-  local curl_cmd="curl -sk -w \"\n%{http_code}\" -X POST -H \"X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}\" -H \"X-Auth-Password: [REDACTED]\" -H \"Content-Type: application/json\" -d '{\"token-lifetime\":30}' \"${api_url}\""
-  log_debug "Executando curl: ${curl_cmd}"
+  log_debug "URL: ${api_url}"
+  log_debug "Username: ${FABRIC_COMPOSER_USERNAME}"
+  log_debug "Pattern: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
 
   local response http_code response_body token=""
 
@@ -451,7 +451,6 @@ get_auth_token() {
 
   if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then
     log_error "Failed to obtain authentication token (HTTP ${http_code})"
-    log_error "Curl executado: ${curl_cmd}"
     log_error "Response completa: ${response_body}"
     _log_func_exit_fail "get_auth_token" "1"
     return 1

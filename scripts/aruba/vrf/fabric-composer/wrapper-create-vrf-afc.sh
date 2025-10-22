@@ -364,10 +364,9 @@ authenticate_afc() {
     local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
     log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
-
-    # Exato padrão do test-afc-auth.sh (TESTE_OK=1) que funcionou
-    local curl_cmd="curl -sk -w \"\n%{http_code}\" -X POST -H \"X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}\" -H \"X-Auth-Password: [REDACTED]\" -H \"Content-Type: application/json\" -d '{\"token-lifetime\":30}' \"${api_url}\""
-    log_debug "Executando curl: ${curl_cmd}"
+    log_debug "URL: ${api_url}"
+    log_debug "Username: ${FABRIC_COMPOSER_USERNAME}"
+    log_debug "Padrão: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
 
     local response http_code body token=""
 
@@ -390,7 +389,6 @@ authenticate_afc() {
 
     if [[ -z "${token}" || "${token}" == "null" ]]; then
         log_error "Falha na autenticação do AFC (HTTP ${http_code})"
-        log_error "Curl executado: ${curl_cmd}"
         log_error "Resposta completa: ${body}"
         _log_func_exit_fail "authenticate_afc" "1"
         return 1
