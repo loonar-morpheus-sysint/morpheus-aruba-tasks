@@ -362,7 +362,26 @@ validate_required_inputs() {
 authenticate_afc() {
     _log_func_enter "authenticate_afc"
 
-    local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
+    local response http_code body token=""
+
+    # Optional virtual-host support: if FABRIC_COMPOSER_FQDN is provided, use it in the URL
+    # and map it to the target IP using --resolve so Host/SNI are correct even without DNS.
+    local url_host curl_resolve_args=()
+    if [[ -n "${FABRIC_COMPOSER_FQDN:-}" ]]; then
+        url_host="${FABRIC_COMPOSER_FQDN}"
+        # Add --resolve only if FABRIC_COMPOSER_IP looks like an IPv4 address
+        if [[ "${FABRIC_COMPOSER_IP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            curl_resolve_args+=("--resolve" "${FABRIC_COMPOSER_FQDN}:${FABRIC_COMPOSER_PORT}:${FABRIC_COMPOSER_IP}")
+            log_debug "Using FQDN with --resolve: ${FABRIC_COMPOSER_FQDN}:${FABRIC_COMPOSER_PORT}->${FABRIC_COMPOSER_IP}"
+        else
+            log_debug "Using FQDN without --resolve (host not an IPv4 literal): ${FABRIC_COMPOSER_FQDN}"
+        fi
+    else
+        url_host="${FABRIC_COMPOSER_IP}"
+        log_debug "Using direct host: ${url_host}"
+    fi
+
+    local api_url="${FABRIC_COMPOSER_PROTOCOL}://${url_host}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
     log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
     log_debug "URL: ${api_url}"
@@ -370,8 +389,6 @@ authenticate_afc() {
 
     # Debug: verificar variáveis de proxy que podem interferir
     log_debug "Proxy env vars: HTTP_PROXY=${HTTP_PROXY:-<unset>} HTTPS_PROXY=${HTTPS_PROXY:-<unset>} http_proxy=${http_proxy:-<unset>} https_proxy=${https_proxy:-<unset>} NO_PROXY=${NO_PROXY:-<unset>} no_proxy=${no_proxy:-<unset>}"
-
-    local response http_code body token=""
 
     # Debug crítico: verificar se credenciais foram extraídas corretamente
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" ]]; then
@@ -387,7 +404,7 @@ authenticate_afc() {
     log_debug "Credenciais extraídas: username=${FABRIC_COMPOSER_USERNAME} (length=${#FABRIC_COMPOSER_USERNAME}), password length=${#FABRIC_COMPOSER_PASSWORD}" # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
     # Limpar variáveis de proxy para garantir conexão direta (mesmo padrão do test-afc-auth.sh)
     response=$(unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy &&
-        curl -sk -w "\n%{http_code}" -X POST \
+        curl -sk "${curl_resolve_args[@]}" -w "\n%{http_code}" -X POST \
             -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
             -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
             -H "Content-Type: application/json" \

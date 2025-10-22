@@ -423,7 +423,24 @@ get_auth_token() {
 
   log_info "Obtaining new authentication token..."
 
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
+  local response http_code response_body token=""
+
+  # Optional virtual-host support via FABRIC_COMPOSER_FQDN
+  local url_host curl_resolve_args=()
+  if [[ -n "${FABRIC_COMPOSER_FQDN:-}" ]]; then
+    url_host="${FABRIC_COMPOSER_FQDN}"
+    if [[ "${FABRIC_COMPOSER_IP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      curl_resolve_args+=("--resolve" "${FABRIC_COMPOSER_FQDN}:${FABRIC_COMPOSER_PORT}:${FABRIC_COMPOSER_IP}")
+      log_debug "Using FQDN with --resolve: ${FABRIC_COMPOSER_FQDN}:${FABRIC_COMPOSER_PORT}->${FABRIC_COMPOSER_IP}"
+    else
+      log_debug "Using FQDN without --resolve (host not an IPv4 literal): ${FABRIC_COMPOSER_FQDN}"
+    fi
+  else
+    url_host="${FABRIC_COMPOSER_IP}"
+    log_debug "Using direct host: ${url_host}"
+  fi
+
+  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${url_host}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
   log_debug "URL: ${api_url}"
   log_debug "Pattern: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
@@ -434,7 +451,7 @@ get_auth_token() {
   # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
   # Limpar variáveis de proxy para garantir conexão direta
   response=$(unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy &&
-    curl -sk -w "\n%{http_code}" -X POST \
+    curl -sk "${curl_resolve_args[@]}" -w "\n%{http_code}" -X POST \
       -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
       -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
       -H "Content-Type: application/json" \
