@@ -85,6 +85,10 @@ if [[ -z "${LIB_DIR}" ]]; then
 fi
 source "${LIB_DIR}/commons.sh"
 
+# Source extract_json function
+# shellcheck disable=SC1091
+source "$(_resolve_script_dir)/extract_json.sh"
+
 # Pre-scan arguments for --no-install
 NO_INSTALL=false
 for _a in "${@}"; do
@@ -162,8 +166,19 @@ ARUBA_MAX_SESSIONS="${ARUBA_MAX_SESSIONS:-<%=customOptions.ARUBA_MAX_SESSIONS%>}
 ARUBA_MAX_CPS="${ARUBA_MAX_CPS:-<%=customOptions.ARUBA_MAX_CPS%>}"
 
 # Credenciais do AFC via Cypher (JSON)
+# Usa here-doc com single-quoted template para renderização do Morpheus
+# Padrão: MORPHEUS_SECRET_API=$(cat <<EOF
+#         '<%=cypher.read("secret/Morpheus-api")%>'
+#         EOF
+#         )
 # Honra variável de ambiente se já definida (útil para testes locais)
-AFC_API_JSON="${AFC_API_JSON:-<%=cypher.read('secret/AFC_API')%>}"
+if [[ -z "${AFC_API_JSON:-}" ]]; then
+    AFC_API_JSON=$(
+        cat <<EOF
+'<%=cypher.read("secret/AFC_API")%>'
+EOF
+    )
+fi
 
 ################################################################################
 # Constantes e arquivos de token (compartilhados com create-vrf-afc.sh)
@@ -249,71 +264,33 @@ normalize_bool() {
 
 parse_cypher_secret() {
     _log_func_enter "parse_cypher_secret"
+
     if [[ -z "${AFC_API_JSON}" || "${AFC_API_JSON}" == "null" ]]; then
         log_error "Cypher 'AFC_API' não retornou conteúdo"
-        log_error "When running locally outside Morpheus, set AFC_API_JSON environment variable:"
-        log_error "  export AFC_API_JSON='{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'"
         _log_func_exit_fail "parse_cypher_secret" "1"
         return 1
     fi
 
-    log_info "JSON: $AFC_API_JSON"
+    # Do not log secrets; acknowledge only
+    log_debug "AFC_API_JSON received (redacted)"
 
-    local cleaned trimmed unwrapped
-    # Remove control chars (CR, NUL, etc.)
-    cleaned=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r' | tr -d '\000')
-    # Trim leading/trailing whitespace
-    trimmed=$(printf '%s' "${cleaned}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-    unwrapped="${trimmed}"
-    # Many Morpheus scripts wrap the rendered cypher JSON in single quotes inside a here-doc.
-    # If so, strip a single pair of surrounding single quotes before parsing.
-    if [[ ${#unwrapped} -ge 2 && "${unwrapped:0:1}" == "'" && "${unwrapped: -1}" == "'" ]]; then
-        unwrapped="${unwrapped:1:${#unwrapped}-2}"
-    fi
-
-    # Check if running outside Morpheus (template not rendered). Check both raw and unwrapped.
-    if [[ "${trimmed}" == *"cypher.read"* || "${unwrapped}" == *"cypher.read"* ]]; then
+    # Check if running outside Morpheus (template not rendered)
+    if [[ "${AFC_API_JSON}" == *"cypher.read"* ]]; then
         log_error "AFC_API_JSON contains Groovy template syntax - script is not running in Morpheus context"
-        log_error "When running locally, set AFC_API_JSON environment variable with valid JSON:"
-        log_error "  export AFC_API_JSON='{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'"
+        log_error "When running locally, define the here-doc pattern:"
+        log_error "  AFC_API_JSON=\$(cat <<EOF"
+        log_error "  '{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'" # pragma: allowlist secret
+        log_error "  EOF"
+        log_error "  )"
         _log_func_exit_fail "parse_cypher_secret" "1"
         return 1
     fi
 
-    # Strategy 1: Try direct JSON parse (most common case: valid JSON)
-    local parsed_json
-    if parsed_json=$(printf '%s' "${trimmed}" | jq -c '.' 2>/dev/null); then
-        log_debug "AFC_API: Direct JSON parse succeeded"
-    # Strategy 1b: If single-quoted, try parsing the unwrapped content directly
-    elif [[ "${unwrapped}" != "${trimmed}" ]] && parsed_json=$(printf '%s' "${unwrapped}" | jq -c '.' 2>/dev/null); then
-        log_debug "AFC_API: Direct JSON parse succeeded after stripping surrounding single quotes"
-    # Strategy 2: Try JSON string containing JSON (double-encoded)
-    elif parsed_json=$(printf '%s' "${trimmed}" | jq -r '.' 2>/dev/null | jq -c '.' 2>/dev/null); then
-        log_debug "AFC_API: Double-encoded JSON parse succeeded"
-    # Strategy 2b: Try double-encoded on unwrapped as well
-    elif [[ "${unwrapped}" != "${trimmed}" ]] && parsed_json=$(printf '%s' "${unwrapped}" | jq -r '.' 2>/dev/null | jq -c '.' 2>/dev/null); then
-        log_debug "AFC_API: Double-encoded JSON parse succeeded after stripping surrounding single quotes"
-    # Strategy 3: Try -R -s fromjson (raw input mode)
-    elif parsed_json=$(printf '%s' "${trimmed}" | jq -R -s 'fromjson' 2>/dev/null); then
-        log_debug "AFC_API: Raw input fromjson succeeded"
-    # Strategy 3b: Raw-fromjson on unwrapped
-    elif [[ "${unwrapped}" != "${trimmed}" ]] && parsed_json=$(printf '%s' "${unwrapped}" | jq -R -s 'fromjson' 2>/dev/null); then
-        log_debug "AFC_API: Raw input fromjson succeeded after stripping surrounding single quotes"
-    else
-        # All strategies failed; log details and exit
-        log_error "AFC_API cypher secret does not contain valid JSON"
-        local snippet
-        snippet=$(printf '%s' "${unwrapped}" | head -c 100 | sed -E 's/(password)[^,}]*/\1=****/I')
-        log_debug "AFC_API (sanitized, first 100 chars): ${snippet}"
-        _log_func_exit_fail "parse_cypher_secret" "1"
-        return 1
-    fi
-
-    # Extract fields using jq
-    FABRIC_COMPOSER_USERNAME=$(printf '%s' "${parsed_json}" | jq -r '.username // empty' 2>/dev/null || true)
-    FABRIC_COMPOSER_PASSWORD=$(printf '%s' "${parsed_json}" | jq -r '.password // empty' 2>/dev/null || true)
+    # Extract fields using extract_json function (same pattern as working project)
+    FABRIC_COMPOSER_USERNAME="$(extract_json "$AFC_API_JSON" "username")"
+    FABRIC_COMPOSER_PASSWORD="$(extract_json "$AFC_API_JSON" "password")"
     local url
-    url=$(printf '%s' "${parsed_json}" | jq -r '.URL // .url // empty' 2>/dev/null || true)
+    url="$(extract_json "$AFC_API_JSON" "URL")"
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"
@@ -461,14 +438,22 @@ run_create_vrf() {
 show_examples() {
     cat <<'EOF'
 Exemplos locais (fora do Morpheus):
-    # Exemplo básico
-    export AFC_API_JSON='{"username":"admin","password":"Aruba123!","URL":"https://172.31.8.99/"}' # pragma: allowlist secret
+    # Simular renderização do Morpheus com here-doc e single-quote
+    AFC_API_JSON=$(cat <<EOF_INNER
+    '{"username":"<USERNAME>","password":"<PASSWORD>","URL":"https://afc.example.local/"}' # pragma: allowlist secret
+    EOF_INNER
+    )
+    export AFC_API_JSON
     export ARUBA_VRF_NAME="MY-VRF"
     export ARUBA_FABRIC="fabric1"
     ./wrapper-create-vrf-afc.sh
 
     # Exemplo completo com todos os parâmetros
-    export AFC_API_JSON='{"username":"admin","password":"Aruba123!","URL":"https://172.31.8.99/"}' # pragma: allowlist secret
+    AFC_API_JSON=$(cat <<EOF_INNER
+    '{"username":"<USERNAME>","password":"<PASSWORD>","URL":"https://afc.example.local/"}' # pragma: allowlist secret
+    EOF_INNER
+    )
+    export AFC_API_JSON
     export ARUBA_VRF_NAME="PROD-VRF"
     export ARUBA_FABRIC="dc1-fabric"
     export ARUBA_RD="65000:100"
