@@ -416,7 +416,7 @@ get_auth_token() {
   _log_func_enter "get_auth_token"
 
   if ! token_needs_refresh; then
-    log_info "Using existing valid token"
+    log_debug "Using cached token (still valid)"
     _log_func_exit_ok "get_auth_token"
     return 0
   fi
@@ -425,34 +425,34 @@ get_auth_token() {
 
   local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
-  # token-lifetime in minutes; DEFAULT_TOKEN_DURATION is seconds
-  local token_lifetime_min
-  token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
+  # Exato padrão do test-afc-auth.sh (TESTE_OK=1) que funcionou
+  local curl_cmd="curl -sk -w \"\n%{http_code}\" -X POST -H \"X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}\" -H \"X-Auth-Password: [REDACTED]\" -H \"Content-Type: application/json\" -d '{\"token-lifetime\":30}' \"${api_url}\""
+  log_debug "Executando curl: ${curl_cmd}"
 
   local response http_code response_body token=""
 
-  # Official method (validated via diagnostic test): POST with X-Auth-* headers, token in .result
-  response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+  # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
+  response=$(curl -sk -w "\n%{http_code}" -X POST \
     -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
     -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
-    --insecure \
-    --noproxy '*' \
+    -d '{"token-lifetime":30}' \
     "${api_url}" 2>&1)
 
   http_code=$(echo "${response}" | tail -n1)
   response_body=$(echo "${response}" | sed '$d')
 
-  log_debug "HTTP Status Code: ${http_code}"
+  log_debug "HTTP Code: ${http_code}"
+  log_debug "Response Body (primeiros 500 chars): ${response_body:0:500}"
 
   if [[ "${http_code}" == "200" ]]; then
     token=$(echo "${response_body}" | jq -r '.result // empty')
   fi
 
   if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then
-    log_error "Authentication failed with HTTP ${http_code}"
-    log_error "Response: ${response_body}"
+    log_error "Failed to obtain authentication token (HTTP ${http_code})"
+    log_error "Curl executado: ${curl_cmd}"
+    log_error "Response completa: ${response_body}"
     _log_func_exit_fail "get_auth_token" "1"
     return 1
   fi

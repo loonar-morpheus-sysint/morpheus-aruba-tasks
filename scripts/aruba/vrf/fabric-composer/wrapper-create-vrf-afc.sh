@@ -363,24 +363,26 @@ authenticate_afc() {
 
     local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
-    # token-lifetime em minutos (doc: padrão 30m). Nosso DEFAULT_TOKEN_DURATION é em segundos.
-    local token_lifetime_min
-    token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
-
     log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
+
+    # Exato padrão do test-afc-auth.sh (TESTE_OK=1) que funcionou
+    local curl_cmd="curl -sk -w \"\n%{http_code}\" -X POST -H \"X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}\" -H \"X-Auth-Password: [REDACTED]\" -H \"Content-Type: application/json\" -d '{\"token-lifetime\":30}' \"${api_url}\""
+    log_debug "Executando curl: ${curl_cmd}"
+
     local response http_code body token=""
 
-    # Método oficial conforme documentação e teste validado (TESTE_OK=1)
-    response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
+    # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
+    response=$(curl -sk -w "\n%{http_code}" -X POST \
         -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
         -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
         -H "Content-Type: application/json" \
-        -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
-        --insecure \
-        --noproxy '*' \
+        -d '{"token-lifetime":30}' \
         "${api_url}" 2>&1)
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | sed '$d')
+
+    log_debug "HTTP Code: ${http_code}"
+    log_debug "Response Body (primeiros 500 chars): ${body:0:500}"
 
     if [[ "${http_code}" == "200" ]]; then
         token=$(echo "${body}" | jq -r '.result // empty')
@@ -388,7 +390,8 @@ authenticate_afc() {
 
     if [[ -z "${token}" || "${token}" == "null" ]]; then
         log_error "Falha na autenticação do AFC (HTTP ${http_code})"
-        log_error "Resposta: ${body}"
+        log_error "Curl executado: ${curl_cmd}"
+        log_error "Resposta completa: ${body}"
         _log_func_exit_fail "authenticate_afc" "1"
         return 1
     fi
