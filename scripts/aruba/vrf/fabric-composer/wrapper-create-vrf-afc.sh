@@ -377,6 +377,7 @@ authenticate_afc() {
         -H "Content-Type: application/json" \
         -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
         --insecure \
+        --noproxy '*' \
         "${api_url}" 2>&1)
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | sed '$d')
