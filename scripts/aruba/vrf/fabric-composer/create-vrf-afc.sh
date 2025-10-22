@@ -433,7 +433,7 @@ get_auth_token() {
   local response
   local http_code
   local response_body
-  local token
+  local token=""
 
   # Attempt 1: JSON body auth
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
@@ -545,7 +545,7 @@ get_fabric_uuid() {
     return 1
   fi
 
-  local token
+  local token=""
   if ! token=$(read_token); then
     log_error "Failed to read authentication token"
     _log_func_exit_fail "get_fabric_uuid" "1"
@@ -617,7 +617,7 @@ get_fabric_switches() {
     return 1
   fi
 
-  local token
+  local token=""
   if ! token=$(read_token); then
     log_error "Failed to read authentication token"
     _log_func_exit_fail "get_fabric_switches" "1"
@@ -848,7 +848,7 @@ create_vrf() {
     return 1
   fi
 
-  local token
+  local token=""
   if ! token=$(read_token); then
     log_error "Failed to read authentication token"
     _log_func_exit_fail "create_vrf" "1"

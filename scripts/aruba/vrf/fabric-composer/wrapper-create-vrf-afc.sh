@@ -366,7 +366,8 @@ authenticate_afc() {
     payload=$(jq -n --arg u "${FABRIC_COMPOSER_USERNAME}" --arg p "${FABRIC_COMPOSER_PASSWORD}" '{username:$u,password:$p}')
 
     log_info "Autenticando no AFC para obter token..."
-    local response http_code body token
+    # Inicialize 'token' para evitar erro com 'set -u' ao checar variáveis não definidas
+    local response http_code body token=""
 
     # Tentativa 1: Autenticação via corpo JSON (algumas versões do AFC aceitam)
     response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
