@@ -328,45 +328,27 @@ get_afc_token() {
 
   log_info "Obtaining new AFC authentication token..."
 
-  local api_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
-  local api_url_1="${api_base}"
-  local api_url_2="${api_base}/" # compatibility: trailing slash
+  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
   local response http_code response_body token current_time expiry_time
 
   # token-lifetime (minutes), DEFAULT_TOKEN_DURATION is seconds
   local token_lifetime_min
   token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
 
-  # Per docs: POST with X-Auth-Username/X-Auth-Password headers
+  # Official method (validated via diagnostic test): POST with X-Auth-* headers, token in .result
   response=$(curl -s -w "\n%{http_code}" -X POST \
     -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
     -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
     -H "Content-Type: application/json" \
     -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
     --insecure \
-    "${api_url_1}" 2>&1)
+    "${api_url}" 2>&1)
 
   http_code=$(echo "${response}" | tail -n1)
   response_body=$(echo "${response}" | sed '$d')
 
   if [[ "${http_code}" == "200" ]]; then
     token=$(echo "${response_body}" | jq -r '.result // empty')
-  fi
-
-  # Retry with trailing slash if needed
-  if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "404" || "${http_code}" == "405" ]]; then
-    response=$(curl -s -w "\n%{http_code}" -X POST \
-      -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
-      -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
-      -H "Content-Type: application/json" \
-      -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
-      --insecure \
-      "${api_url_2}" 2>&1)
-    http_code=$(echo "${response}" | tail -n1)
-    response_body=$(echo "${response}" | sed '$d')
-    if [[ "${http_code}" == "200" ]]; then
-      token=$(echo "${response_body}" | jq -r '.result // empty')
-    fi
   fi
 
   if [[ -z "${token}" ]] || [[ "${token}" == "null" ]]; then

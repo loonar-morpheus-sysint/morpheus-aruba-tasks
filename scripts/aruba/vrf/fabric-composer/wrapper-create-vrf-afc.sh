@@ -361,80 +361,28 @@ validate_required_inputs() {
 authenticate_afc() {
     _log_func_enter "authenticate_afc"
 
-    local api_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
-    local api_url_1="${api_base}"
-    local api_url_2="${api_base}/" # algumas instâncias exigem barra final
+    local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
 
     # token-lifetime em minutos (doc: padrão 30m). Nosso DEFAULT_TOKEN_DURATION é em segundos.
     local token_lifetime_min
     token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
 
-    log_info "Autenticando no AFC para obter token (headers X-Auth-Username/X-Auth-Password)..."
-    # Inicialize 'token' para evitar erro com 'set -u' ao checar variáveis não definidas
-    local response http_code body token=""
+    log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
+    local response http_code body token
 
-    # Tentativa 1: Conforme documentação oficial — POST com headers X-Auth-Username / X-Auth-Password
+    # Método oficial conforme documentação e teste validado (TESTE_OK=1)
     response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
         -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
         -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
         -H "Content-Type: application/json" \
         -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
         --insecure \
-        "${api_url_1}" 2>&1)
+        "${api_url}" 2>&1)
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | sed '$d')
 
     if [[ "${http_code}" == "200" ]]; then
-        token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
-    fi
-
-    # Tentativa 1b: repetir com barra final no endpoint (compatibilidade)
-    if [[ -z "${token}" || "${token}" == "null" || "${http_code}" == "405" || "${http_code}" == "404" ]]; then
-        log_debug "Tentando novamente com barra final no endpoint /auth/token/"
-        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
-            -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
-            -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --argjson tl ${token_lifetime_min:-30} '{"token-lifetime": $tl}')" \
-            --insecure \
-            "${api_url_2}" 2>&1)
-        http_code=$(echo "${response}" | tail -n1)
-        body=$(echo "${response}" | sed '$d')
-        if [[ "${http_code}" == "200" ]]; then
-            token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
-        fi
-    fi
-
-    # Tentativa 2: Fallback legado — POST com corpo JSON (algumas versões aceitam)
-    if [[ -z "${token}" || "${token}" == "null" ]]; then
-        log_debug "Tentando POST com corpo JSON username/password (fallback legado)"
-        local payload
-        payload=$(jq -n --arg u "${FABRIC_COMPOSER_USERNAME}" --arg p "${FABRIC_COMPOSER_PASSWORD}" '{username:$u,password:$p}')
-        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
-            -H "Content-Type: application/json" \
-            -d "${payload}" \
-            --insecure \
-            "${api_url_1}" 2>&1)
-        http_code=$(echo "${response}" | tail -n1)
-        body=$(echo "${response}" | sed '$d')
-        if [[ "${http_code}" == "200" ]]; then
-            token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
-        fi
-    fi
-
-    # Tentativa 3: Fallback adicional — Basic Auth
-    if [[ -z "${token}" || "${token}" == "null" ]]; then
-        log_debug "Tentando POST com Basic Auth no header (fallback)"
-        response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
-            -u "${FABRIC_COMPOSER_USERNAME}:${FABRIC_COMPOSER_PASSWORD}" \
-            -H "Content-Type: application/json" \
-            --insecure \
-            "${api_url_1}" 2>&1)
-        http_code=$(echo "${response}" | tail -n1)
-        body=$(echo "${response}" | sed '$d')
-        if [[ "${http_code}" == "200" ]]; then
-            token=$(echo "${body}" | jq -r '.result // .token // .access_token // empty')
-        fi
+        token=$(echo "${body}" | jq -r '.result // empty')
     fi
 
     if [[ -z "${token}" || "${token}" == "null" ]]; then
@@ -566,5 +514,6 @@ main() {
 
 # Executa somente quando chamado diretamente
 if [[ "$(_resolve_script_dir)" == "$(cd "$(dirname "${0}")" && pwd)" ]]; then
+    export LOG_LEVEL=DEBUG
     main "$@"
 fi
