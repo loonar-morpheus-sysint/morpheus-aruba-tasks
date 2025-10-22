@@ -427,14 +427,19 @@ get_auth_token() {
 
   log_debug "URL: ${api_url}"
   log_debug "Pattern: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
+  log_debug "Proxy env vars: HTTP_PROXY=${HTTP_PROXY:-<unset>} HTTPS_PROXY=${HTTPS_PROXY:-<unset>} http_proxy=${http_proxy:-<unset>} https_proxy=${https_proxy:-<unset>}"
 
-  local response http_code response_body token="" # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
-  response=$(curl -sk -w "\n%{http_code}" -X POST \
-    -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
-    -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
-    -H "Content-Type: application/json" \
-    -d '{"token-lifetime":30}' \
-    "${api_url}" 2>&1)
+  local response http_code response_body token=""
+
+  # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
+  # Limpar variáveis de proxy para garantir conexão direta
+  response=$(unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy &&
+    curl -sk -w "\n%{http_code}" -X POST \
+      -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
+      -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
+      -H "Content-Type: application/json" \
+      -d '{"token-lifetime":30}' \
+      "${api_url}" 2>&1)
 
   http_code=$(echo "${response}" | tail -n1)
   response_body=$(echo "${response}" | sed '$d')
