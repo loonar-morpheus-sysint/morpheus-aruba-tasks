@@ -151,8 +151,8 @@ ARUBA_FABRIC="${ARUBA_FABRIC:-<%=customOptions.ARUBA_FABRIC%>}"
 ARUBA_RD="${ARUBA_RD:-<%=customOptions.ARUBA_RD%>}"
 ARUBA_RT_IMPORT="${ARUBA_RT_IMPORT:-<%=customOptions.ARUBA_RT_IMPORT%>}"
 ARUBA_RT_EXPORT="${ARUBA_RT_EXPORT:-<%=customOptions.ARUBA_RT_EXPORT%>}"
-ARUBA_AF="${ARUBA_AF:-<%=customOptions.ARUBA_AF%>}" # ipv4, ipv6, evpn (default: ipv4)
-ARUBA_VNI="${ARUBA_VNI:-<%=customOptions.ARUBA_VNI%>}" # L2/L3 VPN VNI (1-16777214)
+ARUBA_AF="${ARUBA_AF:-<%=customOptions.ARUBA_AF%>}"                   # ipv4, ipv6, evpn (default: ipv4)
+ARUBA_VNI="${ARUBA_VNI:-<%=customOptions.ARUBA_VNI%>}"                # L2/L3 VPN VNI (1-16777214)
 ARUBA_SWITCHES="${ARUBA_SWITCHES:-<%=customOptions.ARUBA_SWITCHES%>}" # Comma-separated switch UUIDs (optional)
 ARUBA_DESCRIPTION="${ARUBA_DESCRIPTION:-<%=customOptions.ARUBA_DESCRIPTION%>}"
 MORPHEUS_DRY_RUN="${MORPHEUS_DRY_RUN:-<%=customOptions.DRY_RUN%>}" # true/false (opcional)
@@ -180,8 +180,8 @@ cleanup_tokens() {
     local removed=0
     if [[ -f "${TOKEN_FILE}" ]]; then
         # Se shred estiver disponível, use para sobrescrever antes de apagar
-        if command -v shred > /dev/null 2>&1; then
-            shred -u -z -n 1 "${TOKEN_FILE}" 2> /dev/null || rm -f "${TOKEN_FILE}" || true
+        if command -v shred >/dev/null 2>&1; then
+            shred -u -z -n 1 "${TOKEN_FILE}" 2>/dev/null || rm -f "${TOKEN_FILE}" || true
         else
             rm -f "${TOKEN_FILE}" || true
         fi
@@ -213,7 +213,7 @@ check_dependencies() {
     local deps=("curl" "sed")
     local missing=0
     for cmd in "${deps[@]}"; do
-        if ! command -v "$cmd" > /dev/null 2>&1; then
+        if ! command -v "$cmd" >/dev/null 2>&1; then
             log_error "Dependência ausente: $cmd"
             missing=1
         else
@@ -221,7 +221,7 @@ check_dependencies() {
         fi
     done
 
-    if ! command -v jq > /dev/null 2>&1; then
+    if ! command -v jq >/dev/null 2>&1; then
         log_error "Dependência ausente: jq (install-jq.sh can install it, or run with --no-install after providing jq)"
         missing=1
     else
@@ -241,24 +241,14 @@ normalize_bool() {
     local v="${1:-}"
     v=$(echo -n "$v" | tr '[:upper:]' '[:lower:]')
     case "$v" in
-        1 | yes | y | true | on) echo "true" ;;
-        0 | no | n | false | off | "") echo "false" ;;
-        *) echo "false" ;;
+    1 | yes | y | true | on) echo "true" ;;
+    0 | no | n | false | off | "") echo "false" ;;
+    *) echo "false" ;;
     esac
 }
 
 parse_cypher_secret() {
     _log_func_enter "parse_cypher_secret"
-
-    # Check if running outside Morpheus (template not rendered)
-    if [[ "${AFC_API_JSON}" == *"cypher.read"* ]]; then
-        log_error "AFC_API_JSON contains Groovy template syntax - script is not running in Morpheus context"
-        log_error "When running locally, set AFC_API_JSON environment variable with valid JSON:"
-        log_error "  export AFC_API_JSON='{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'"
-        _log_func_exit_fail "parse_cypher_secret" "1"
-        return 1
-    fi
-
     if [[ -z "${AFC_API_JSON}" || "${AFC_API_JSON}" == "null" ]]; then
         log_error "Cypher 'AFC_API' não retornou conteúdo"
         log_error "When running locally outside Morpheus, set AFC_API_JSON environment variable:"
@@ -269,27 +259,51 @@ parse_cypher_secret() {
 
     log_info "JSON: $AFC_API_JSON"
 
-    local cleaned trimmed
+    local cleaned trimmed unwrapped
     # Remove control chars (CR, NUL, etc.)
     cleaned=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r' | tr -d '\000')
     # Trim leading/trailing whitespace
     trimmed=$(printf '%s' "${cleaned}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    unwrapped="${trimmed}"
+    # Many Morpheus scripts wrap the rendered cypher JSON in single quotes inside a here-doc.
+    # If so, strip a single pair of surrounding single quotes before parsing.
+    if [[ ${#unwrapped} -ge 2 && "${unwrapped:0:1}" == "'" && "${unwrapped: -1}" == "'" ]]; then
+        unwrapped="${unwrapped:1:${#unwrapped}-2}"
+    fi
+
+    # Check if running outside Morpheus (template not rendered). Check both raw and unwrapped.
+    if [[ "${trimmed}" == *"cypher.read"* || "${unwrapped}" == *"cypher.read"* ]]; then
+        log_error "AFC_API_JSON contains Groovy template syntax - script is not running in Morpheus context"
+        log_error "When running locally, set AFC_API_JSON environment variable with valid JSON:"
+        log_error "  export AFC_API_JSON='{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'"
+        _log_func_exit_fail "parse_cypher_secret" "1"
+        return 1
+    fi
 
     # Strategy 1: Try direct JSON parse (most common case: valid JSON)
     local parsed_json
     if parsed_json=$(printf '%s' "${trimmed}" | jq -c '.' 2>/dev/null); then
         log_debug "AFC_API: Direct JSON parse succeeded"
+    # Strategy 1b: If single-quoted, try parsing the unwrapped content directly
+    elif [[ "${unwrapped}" != "${trimmed}" ]] && parsed_json=$(printf '%s' "${unwrapped}" | jq -c '.' 2>/dev/null); then
+        log_debug "AFC_API: Direct JSON parse succeeded after stripping surrounding single quotes"
     # Strategy 2: Try JSON string containing JSON (double-encoded)
     elif parsed_json=$(printf '%s' "${trimmed}" | jq -r '.' 2>/dev/null | jq -c '.' 2>/dev/null); then
         log_debug "AFC_API: Double-encoded JSON parse succeeded"
+    # Strategy 2b: Try double-encoded on unwrapped as well
+    elif [[ "${unwrapped}" != "${trimmed}" ]] && parsed_json=$(printf '%s' "${unwrapped}" | jq -r '.' 2>/dev/null | jq -c '.' 2>/dev/null); then
+        log_debug "AFC_API: Double-encoded JSON parse succeeded after stripping surrounding single quotes"
     # Strategy 3: Try -R -s fromjson (raw input mode)
     elif parsed_json=$(printf '%s' "${trimmed}" | jq -R -s 'fromjson' 2>/dev/null); then
         log_debug "AFC_API: Raw input fromjson succeeded"
+    # Strategy 3b: Raw-fromjson on unwrapped
+    elif [[ "${unwrapped}" != "${trimmed}" ]] && parsed_json=$(printf '%s' "${unwrapped}" | jq -R -s 'fromjson' 2>/dev/null); then
+        log_debug "AFC_API: Raw input fromjson succeeded after stripping surrounding single quotes"
     else
         # All strategies failed; log details and exit
         log_error "AFC_API cypher secret does not contain valid JSON"
         local snippet
-        snippet=$(printf '%s' "${trimmed}" | head -c 100 | sed -E 's/(password)[^,}]*/\1=****/I')
+        snippet=$(printf '%s' "${unwrapped}" | head -c 100 | sed -E 's/(password)[^,}]*/\1=****/I')
         log_debug "AFC_API (sanitized, first 100 chars): ${snippet}"
         _log_func_exit_fail "parse_cypher_secret" "1"
         return 1
@@ -312,7 +326,7 @@ parse_cypher_secret() {
     local hostport
     hostport=$(echo "$url" | sed -n 's#^[a-zA-Z][a-zA-Z0-9+.-]*://\([^/]*\).*#\1#p')
     if [[ -z "$FABRIC_COMPOSER_PROTOCOL" ]]; then
-      FABRIC_COMPOSER_PROTOCOL="https";
+        FABRIC_COMPOSER_PROTOCOL="https"
     fi
     if [[ -z "$hostport" ]]; then
         log_error "Não foi possível extrair host da URL do AFC"
@@ -388,12 +402,12 @@ authenticate_afc() {
         return 1
     fi
 
-    echo -n "${token}" > "${TOKEN_FILE}"
+    echo -n "${token}" >"${TOKEN_FILE}"
     chmod 600 "${TOKEN_FILE}"
     date +%s | {
         read -r now
         echo $((now + DEFAULT_TOKEN_DURATION))
-    } > "${TOKEN_EXPIRY_FILE}"
+    } >"${TOKEN_EXPIRY_FILE}"
     log_success "Token do AFC obtido com sucesso"
     _log_func_exit_ok "authenticate_afc"
     return 0
@@ -445,7 +459,7 @@ run_create_vrf() {
 }
 
 show_examples() {
-    cat << 'EOF'
+    cat <<'EOF'
 Exemplos locais (fora do Morpheus):
     # Exemplo básico
     export AFC_API_JSON='{"username":"admin","password":"Aruba123!","URL":"https://172.31.8.99/"}' # pragma: allowlist secret
