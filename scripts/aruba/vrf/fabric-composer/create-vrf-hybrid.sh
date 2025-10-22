@@ -329,7 +329,7 @@ get_afc_token() {
   log_info "Obtaining new AFC authentication token..."
 
   local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
-  local response http_code response_body token current_time expiry_time
+  local response http_code response_body token="" current_time expiry_time
 
   # token-lifetime (minutes), DEFAULT_TOKEN_DURATION is seconds
   local token_lifetime_min

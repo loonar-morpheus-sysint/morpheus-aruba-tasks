@@ -429,7 +429,7 @@ get_auth_token() {
   local token_lifetime_min
   token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
 
-  local response http_code response_body token
+  local response http_code response_body token=""
 
   # Official method (validated via diagnostic test): POST with X-Auth-* headers, token in .result
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \

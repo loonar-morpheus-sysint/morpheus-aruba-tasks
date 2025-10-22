@@ -368,7 +368,7 @@ authenticate_afc() {
     token_lifetime_min=$((DEFAULT_TOKEN_DURATION / 60))
 
     log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
-    local response http_code body token
+    local response http_code body token=""
 
     # Método oficial conforme documentação e teste validado (TESTE_OK=1)
     response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X POST \
