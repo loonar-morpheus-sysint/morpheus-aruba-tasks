@@ -440,9 +440,22 @@ authenticate_afc() {
 
 run_create_vrf() {
     _log_func_enter "run_create_vrf"
-    local create_script="${SCRIPT_DIR}/create-vrf-afc.sh"
+
+    # Usar _resolve_script_dir para obter o diretório do wrapper atual
+    local wrapper_dir
+    wrapper_dir="$(_resolve_script_dir)"
+
+    # create-vrf-afc.sh está no MESMO diretório do wrapper
+    local create_script="${wrapper_dir}/create-vrf-afc.sh"
+
     if [[ ! -x "${create_script}" ]]; then
         log_error "Script não encontrado ou não executável: ${create_script}"
+
+        # Debug adicional para troubleshooting
+        log_debug "wrapper_dir: ${wrapper_dir}"
+        log_debug "Arquivos no diretório:"
+        ls -la "${wrapper_dir}/"*.sh 2>/dev/null || log_debug "Não foi possível listar arquivos"
+
         _log_func_exit_fail "run_create_vrf" "1"
         return 1
     fi
