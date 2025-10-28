@@ -567,6 +567,11 @@ get_fabric_uuid() {
     return 1
   fi
 
+
+  # Diagnóstico: mostrar lista de fabrics antes do erro
+  log_info "[DIAG] Chamada direta à API /api/v1/fabrics para diagnóstico:"
+  echo "${response_body}" | jq '.' || echo "[DIAG] Não foi possível fazer parse do JSON de fabrics."
+
   # Search for fabric by name
   local fabric_uuid
   fabric_uuid=$(echo "${response_body}" | jq -r --arg name "${fabric_name}" '.[] | select(.name == $name) | .uuid // .id // empty' 2>/dev/null | head -n1)
