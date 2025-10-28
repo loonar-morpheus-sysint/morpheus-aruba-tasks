@@ -548,6 +548,10 @@ get_fabric_uuid() {
   local response
   local http_code
 
+
+  # Log the full curl command with all parameters rendered
+  log_info "[DEBUG-AFC] curl command: curl --max-time 15 --connect-timeout 5 -s -w '\n%{{http_code}}' -X GET -H 'Content-Type: application/json' -H 'Authorization: ${token}' -H 'X-Auth-Refresh-Token: true' --insecure '${api_url}'"
+
   log_info "[DEBUG-AFC] Chamando API /api/v1/fabrics: ${api_url}"
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
@@ -573,14 +577,20 @@ get_fabric_uuid() {
     return 1
   fi
 
+
   # Search for fabric by name
   local fabric_uuid
-  fabric_uuid=$(echo "${response_body}" | jq -r --arg name "${fabric_name}" '.[] | select(.name == $name) | .uuid // .id // empty' 2>/dev/null | head -n1)
+  fabric_uuid=$(echo "${response_body}" | jq -r --arg name "${fabric_name}" '.[] | select(.name == $name) | .uuid // .id // empty' 2> >(tee /tmp/jq_error_fabric_uuid.log >&2) | head -n1)
 
   if [[ -z "${fabric_uuid}" ]] || [[ "${fabric_uuid}" == "null" ]]; then
     log_error "Fabric not found: ${fabric_name}"
     log_info "Available fabrics:"
     echo "${response_body}" | jq -r '.[] | "\(.name) (\(.uuid // .id))"' 2>/dev/null || echo "Unable to parse fabric list"
+    log_error "[DEBUG-AFC] jq error output (if any):"
+    if [[ -f /tmp/jq_error_fabric_uuid.log ]]; then
+      cat /tmp/jq_error_fabric_uuid.log
+    fi
+    log_error "[DEBUG-AFC] Full response body: ${response_body}"
     _log_func_exit_fail "get_fabric_uuid" "1"
     return 1
   fi
