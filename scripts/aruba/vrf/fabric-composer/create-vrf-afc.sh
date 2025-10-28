@@ -562,7 +562,8 @@ get_fabric_uuid() {
 
   if [[ "${http_code}" != "200" ]]; then
     log_error "Failed to retrieve fabrics (HTTP ${http_code})"
-    log_error "Response: ${response_body}"
+    log_error "[DIAG] Corpo da resposta da API /api/v1/fabrics (mesmo com erro):"
+    echo "${response_body}" | jq '.' || echo "[DIAG] Não foi possível fazer parse do JSON de fabrics."
     _log_func_exit_fail "get_fabric_uuid" "1"
     return 1
   fi
