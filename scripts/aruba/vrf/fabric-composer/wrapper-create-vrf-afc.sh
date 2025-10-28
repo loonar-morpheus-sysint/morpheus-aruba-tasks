@@ -359,9 +359,18 @@ validate_required_inputs() {
     local errors=0
 
     # Considera válido se não for vazio E não for o placeholder literal
-    local vrf_trimmed fabric_trimmed
-    vrf_trimmed="${ARUBA_VRF_NAME// /}"
-    fabric_trimmed="${ARUBA_FABRIC// /}"
+        # Função robusta para trim de todos os espaços, tabs e quebras de linha
+        trim_all() {
+            local var="$1"
+            # Remove todos os espaços, tabs e quebras de linha
+            echo -n "$var" | tr -d '[:space:]'
+        }
+
+        local vrf_trimmed fabric_trimmed
+        vrf_trimmed="$(trim_all "${ARUBA_VRF_NAME}")"
+        fabric_trimmed="$(trim_all "${ARUBA_FABRIC}")"
+        log_debug "[VALIDATE] ARUBA_VRF_NAME original: '${ARUBA_VRF_NAME}', trim: '${vrf_trimmed}'"
+        log_debug "[VALIDATE] ARUBA_FABRIC original: '${ARUBA_FABRIC}', trim: '${fabric_trimmed}'"
     if [[ -z "${vrf_trimmed}" || "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
         log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME (valor atual: '${ARUBA_VRF_NAME}')"
         errors=1
