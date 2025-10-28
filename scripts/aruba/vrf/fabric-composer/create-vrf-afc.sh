@@ -544,9 +544,11 @@ get_fabric_uuid() {
 
   log_info "Searching for fabric: ${fabric_name}"
 
+
   local response
   local http_code
 
+  log_info "[DEBUG-AFC] Chamando API /api/v1/fabrics: ${api_url}"
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
     -H "Authorization: ${token}" \
@@ -558,24 +560,18 @@ get_fabric_uuid() {
   local response_body
   response_body=$(echo "${response}" | sed '$d')
 
-  log_debug "HTTP Status Code: ${http_code}"
+  log_info "[DEBUG-AFC] HTTP Status Code: ${http_code}"
+  log_info "[DEBUG-AFC] Corpo bruto da resposta (até 500 chars): ${response_body:0:500}"
+  echo "[ECHO] Corpo bruto da resposta da API /api/v1/fabrics:"
+  echo "${response_body}"
+  echo "[ECHO] Parse com jq (.[] | .name, .uuid):"
+  echo "${response_body}" | jq -r '.[] | "NOME: "+(.name|tostring)+" UUID: "+((.uuid//.id)|tostring)' 2>&1 || echo "[DIAG] Não foi possível fazer parse do JSON de fabrics."
 
   if [[ "${http_code}" != "200" ]]; then
     log_error "Failed to retrieve fabrics (HTTP ${http_code})"
-    log_error "[DIAG] Corpo da resposta da API /api/v1/fabrics (mesmo com erro):"
-    echo "${response_body}" | jq '.' || echo "[DIAG] Não foi possível fazer parse do JSON de fabrics."
     _log_func_exit_fail "get_fabric_uuid" "1"
     return 1
   fi
-
-
-  # Diagnóstico: mostrar lista de fabrics antes do erro
-  log_info "[DIAG] Chamada direta à API /api/v1/fabrics para diagnóstico:"
-  log_info "[RAW] Resposta bruta da API /api/v1/fabrics: ${response_body}"
-  echo "[ECHO] Resposta bruta da API /api/v1/fabrics:"
-  echo "${response_body}"
-  echo "[ECHO] Parse com jq:"
-  echo "${response_body}" | jq '.' || echo "[DIAG] Não foi possível fazer parse do JSON de fabrics."
 
   # Search for fabric by name
   local fabric_uuid
