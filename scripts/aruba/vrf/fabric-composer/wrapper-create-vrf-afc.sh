@@ -152,6 +152,8 @@ set -euo pipefail
 ################################################################################
 ARUBA_VRF_NAME="<%=customOptions.ARUBA_VRF_NAME%>"
 ARUBA_FABRIC="<%=customOptions.ARUBA_FABRIC%>"
+log_info "[WRAPPER] Valor obtido para ARUBA_VRF_NAME (prioridade: wrapper): '${ARUBA_VRF_NAME}'"
+log_info "[WRAPPER] Valor obtido para ARUBA_FABRIC (prioridade: wrapper): '${ARUBA_FABRIC}'"
 ARUBA_RD="<%=customOptions.ARUBA_RD%>"
 ARUBA_RT_IMPORT="<%=customOptions.ARUBA_RT_IMPORT%>"
 ARUBA_RT_EXPORT="<%=customOptions.ARUBA_RT_EXPORT%>"
