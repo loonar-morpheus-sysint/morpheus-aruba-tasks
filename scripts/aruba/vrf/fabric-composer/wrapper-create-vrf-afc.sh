@@ -535,8 +535,12 @@ run_create_vrf() {
 
     log_info "Invocando create-vrf-afc.sh com argumentos: ${args[*]}"
     # As variáveis de credencial já estão exportadas para o ambiente
-    "${create_script}" "${args[@]}"
-    local rc=$?
+    # Stream both stdout and stderr from the child script, prefixing for clarity
+    "${create_script}" "${args[@]}" 2>&1 | while IFS= read -r line; do
+        # Prefix lines from the child script for visibility
+        echo "[CREATE-VRF-AFC] $line"
+    done
+    local rc=${PIPESTATUS[0]}
     if [[ $rc -ne 0 ]]; then
         log_error "Falha na execução de create-vrf-afc.sh (rc=$rc)"
         _log_func_exit_fail "run_create_vrf" "$rc"
