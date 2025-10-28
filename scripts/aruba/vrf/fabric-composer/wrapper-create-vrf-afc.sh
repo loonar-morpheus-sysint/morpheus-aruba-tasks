@@ -358,12 +358,15 @@ validate_required_inputs() {
     _log_func_enter "validate_required_inputs"
     local errors=0
 
-    # If the template was not rendered, the value stays as the literal placeholder
-    if [[ -z "${ARUBA_VRF_NAME:-}" || "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
+    # Considera válido se não for vazio E não for o placeholder literal
+    local vrf_trimmed fabric_trimmed
+    vrf_trimmed="${ARUBA_VRF_NAME// /}"
+    fabric_trimmed="${ARUBA_FABRIC// /}"
+    if [[ -z "${vrf_trimmed}" || "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
         log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME (valor atual: '${ARUBA_VRF_NAME}')"
         errors=1
     fi
-    if [[ -z "${ARUBA_FABRIC:-}" || "${ARUBA_FABRIC}" == "<%=customOptions.ARUBA_FABRIC%>" ]]; then
+    if [[ -z "${fabric_trimmed}" || "${ARUBA_FABRIC}" == "<%=customOptions.ARUBA_FABRIC%>" ]]; then
         log_error "Parâmetro obrigatório ausente: ARUBA_FABRIC (valor atual: '${ARUBA_FABRIC}')"
         errors=1
     fi
