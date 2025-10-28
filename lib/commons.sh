@@ -357,36 +357,41 @@ verify_installation() {
 #   0 on success, 1 on failure
 #######################################
 extract_json() {
-    _log_func_enter "extract_json"
+    # Redirect all log output to stderr to avoid polluting stdout during command substitution
+    {
+        _log_func_enter "extract_json"
 
-    local json_data="${1:-}"
-    local json_key="${2:-}"
+        local json_data="${1:-}"
+        local json_key="${2:-}"
 
-    if [[ -z "${json_key}" ]]; then
-        log_error "extract_json: key not provided"
-        _log_func_exit_fail "extract_json" "1"
-        return 1
-    fi
+        if [[ -z "${json_key}" ]]; then
+            log_error "extract_json: key not provided"
+            _log_func_exit_fail "extract_json" "1"
+            return 1
+        fi
 
-    # Strip a single pair of surrounding single quotes, if present
-    local json_cleaned
-    json_cleaned=$(printf '%s' "${json_data}" | sed "s/^'//;s/'$//")
+        # Strip a single pair of surrounding single quotes, if present
+        local json_cleaned
+        json_cleaned=$(printf '%s' "${json_data}" | sed "s/^'//;s/'$//")
 
-    # Use jq to extract key; suppress errors to avoid leaking content
-    local value
-    if ! value=$(printf '%s' "${json_cleaned}" | jq -r --arg key "${json_key}" '.[$key] // empty' 2>/dev/null); then
-        log_error "extract_json: invalid JSON input"
-        _log_func_exit_fail "extract_json" "1"
-        return 1
-    fi
+        # Use jq to extract key; suppress errors to avoid leaking content
+        local value
+        if ! value=$(printf '%s' "${json_cleaned}" | jq -r --arg key "${json_key}" '.[$key] // empty' 2>/dev/null); then
+            log_error "extract_json: invalid JSON input"
+            _log_func_exit_fail "extract_json" "1"
+            return 1
+        fi
 
-    if [[ -z "${value}" ]]; then
-        log_error "extract_json: key '${json_key}' not found"
-        _log_func_exit_fail "extract_json" "1"
-        return 1
-    fi
+        if [[ -z "${value}" ]]; then
+            log_error "extract_json: key '${json_key}' not found"
+            _log_func_exit_fail "extract_json" "1"
+            return 1
+        fi
 
+        _log_func_exit_ok "extract_json"
+    } >&2
+
+    # Output the actual value to stdout (outside the redirected block)
     printf '%s\n' "${value}"
-    _log_func_exit_ok "extract_json"
     return 0
 }

@@ -298,12 +298,11 @@ parse_cypher_secret() {
     fi
 
     # Extract fields using extract_json function (same pattern as working project)
-    # Capture only the last line (actual value) to avoid log pollution in command substitution
-    # The extract_json function outputs debug logs to stdout, so we need to filter them
-    FABRIC_COMPOSER_USERNAME="$(extract_json "$AFC_API_JSON" "username" 2>&1 | tail -n1)"
-    FABRIC_COMPOSER_PASSWORD="$(extract_json "$AFC_API_JSON" "password" 2>&1 | tail -n1)"
+    # extract_json now redirects logs to stderr internally, so stdout is clean
+    FABRIC_COMPOSER_USERNAME="$(extract_json "$AFC_API_JSON" "username")"
+    FABRIC_COMPOSER_PASSWORD="$(extract_json "$AFC_API_JSON" "password")"
     local url
-    url="$(extract_json "$AFC_API_JSON" "URL" 2>&1 | tail -n1)"
+    url="$(extract_json "$AFC_API_JSON" "URL")"
 
     if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
         log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"
