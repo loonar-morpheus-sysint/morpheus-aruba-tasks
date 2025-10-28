@@ -441,23 +441,36 @@ authenticate_afc() {
 run_create_vrf() {
     _log_func_enter "run_create_vrf"
 
-    # Usar _resolve_script_dir para obter o diretório do wrapper atual
-    local wrapper_dir
-    wrapper_dir="$(_resolve_script_dir)"
+    # Encontrar create-vrf-afc.sh: ele está em scripts/aruba/vrf/fabric-composer/
+    # O wrapper pode ser executado de qualquer lugar pelo Morpheus, então vamos
+    # buscar a partir do LIB_DIR (que já foi resolvido corretamente no início)
+    local repo_root
+    repo_root="$(dirname "${LIB_DIR}")"  # LIB_DIR = /path/to/repo/lib, então dirname = /path/to/repo
 
-    # create-vrf-afc.sh está no MESMO diretório do wrapper
-    local create_script="${wrapper_dir}/create-vrf-afc.sh"
+    local create_script="${repo_root}/scripts/aruba/vrf/fabric-composer/create-vrf-afc.sh"
 
-    if [[ ! -x "${create_script}" ]]; then
-        log_error "Script não encontrado ou não executável: ${create_script}"
+    log_debug "Procurando create-vrf-afc.sh em: ${create_script}"
+    log_debug "repo_root: ${repo_root}"
+    log_debug "LIB_DIR: ${LIB_DIR}"
+
+    if [[ ! -f "${create_script}" ]]; then
+        log_error "Script não encontrado: ${create_script}"
 
         # Debug adicional para troubleshooting
-        log_debug "wrapper_dir: ${wrapper_dir}"
-        log_debug "Arquivos no diretório:"
-        ls -la "${wrapper_dir}/"*.sh 2>/dev/null || log_debug "Não foi possível listar arquivos"
+        log_debug "Conteúdo do diretório esperado:"
+        ls -la "$(dirname "${create_script}")/" 2>/dev/null || log_debug "Diretório não encontrado"
 
         _log_func_exit_fail "run_create_vrf" "1"
         return 1
+    fi
+
+    if [[ ! -x "${create_script}" ]]; then
+        log_warn "Script encontrado mas não executável, aplicando chmod +x: ${create_script}"
+        chmod +x "${create_script}" 2>/dev/null || {
+            log_error "Falha ao tornar script executável: ${create_script}"
+            _log_func_exit_fail "run_create_vrf" "1"
+            return 1
+        }
     fi
 
     local args=("--name" "${ARUBA_VRF_NAME}" "--fabric" "${ARUBA_FABRIC}")
