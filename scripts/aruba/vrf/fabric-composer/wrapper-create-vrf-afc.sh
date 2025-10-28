@@ -441,6 +441,21 @@ authenticate_afc() {
 }
 
 run_create_vrf() {
+    # Log Morpheus Data substitutions for all ARUBA_* variables
+    log_debug "Morpheus substitution values:"
+    log_debug "ARUBA_VRF_NAME: '${ARUBA_VRF_NAME}'"
+    log_debug "ARUBA_FABRIC: '${ARUBA_FABRIC}'"
+    log_debug "ARUBA_RD: '${ARUBA_RD}'"
+    log_debug "ARUBA_RT_IMPORT: '${ARUBA_RT_IMPORT}'"
+    log_debug "ARUBA_RT_EXPORT: '${ARUBA_RT_EXPORT}'"
+    log_debug "ARUBA_AF: '${ARUBA_AF}'"
+    log_debug "ARUBA_VNI: '${ARUBA_VNI}'"
+    log_debug "ARUBA_SWITCHES: '${ARUBA_SWITCHES}'"
+    log_debug "ARUBA_DESCRIPTION: '${ARUBA_DESCRIPTION}'"
+    log_debug "ARUBA_MAX_SESSIONS_MODE: '${ARUBA_MAX_SESSIONS_MODE}'"
+    log_debug "ARUBA_MAX_CPS_MODE: '${ARUBA_MAX_CPS_MODE}'"
+    log_debug "ARUBA_MAX_SESSIONS: '${ARUBA_MAX_SESSIONS}'"
+    log_debug "ARUBA_MAX_CPS: '${ARUBA_MAX_CPS}'"
     _log_func_enter "run_create_vrf"
 
     # Encontrar create-vrf-afc.sh: ele está em scripts/aruba/vrf/fabric-composer/
