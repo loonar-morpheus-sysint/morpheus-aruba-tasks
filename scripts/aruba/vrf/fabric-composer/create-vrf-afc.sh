@@ -601,31 +601,33 @@ get_fabric_uuid() {
 # Returns:
 #   0 on success (even if no switches found), 1 on failure
 #######################################
+
 get_fabric_switches() {
   _log_func_enter "get_fabric_switches"
-
-  local fabric_uuid="$1"
-
-  if [[ -z "${fabric_uuid}" ]]; then
-    log_error "Fabric UUID is required"
+  if [[ -z "${FABRIC_NAME}" ]]; then
+    log_error "FABRIC_NAME is not set. Cannot resolve fabric UUID."
     _log_func_exit_fail "get_fabric_switches" "1"
     return 1
   fi
 
-  local token=""
+  # Resolve fabric UUID
+  local fabric_uuid
+  if ! fabric_uuid=$(get_fabric_uuid "${FABRIC_NAME}"); then
+    log_error "Failed to resolve fabric UUID for name: ${FABRIC_NAME}"
+    _log_func_exit_fail "get_fabric_switches" "1"
+    return 1
+  fi
+
+  # Build API URL for switches in the fabric
+  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/fabrics/${fabric_uuid}/switches"
+  local token
   if ! token=$(read_token); then
     log_error "Failed to read authentication token"
     _log_func_exit_fail "get_fabric_switches" "1"
     return 1
   fi
 
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/switches?fabric_uuid=${fabric_uuid}"
-
-  log_info "Retrieving switches for fabric UUID: ${fabric_uuid}"
-
-  local response
-  local http_code
-
+  local response http_code response_body
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
     -H "Authorization: ${token}" \
@@ -634,10 +636,10 @@ get_fabric_switches() {
     "${api_url}" 2>&1)
 
   http_code=$(echo "${response}" | tail -n1)
-  local response_body
   response_body=$(echo "${response}" | sed '$d')
 
   log_debug "HTTP Status Code: ${http_code}"
+  log_debug "Switches API response (first 500 chars): ${response_body:0:500}"
 
   if [[ "${http_code}" != "200" ]]; then
     log_warning "Failed to retrieve switches (HTTP ${http_code}), VRF will be created without switch assignment"
@@ -660,6 +662,9 @@ get_fabric_switches() {
   _log_func_exit_ok "get_fabric_switches"
   return 0
 }
+
+# The following code block was outside any function and caused syntax errors. It is removed.
+
 
 #######################################
 # Validate VRF configuration parameters
