@@ -570,7 +570,7 @@ get_fabric_uuid() {
   printf '[ECHO-DEBUG] HTTP Status Code: %s\n' "${http_code}"
   printf '[ECHO-DEBUG] Corpo bruto da resposta (primeiros 500 chars): %s\n' "${response_body:0:500}"
   printf '[ECHO-DEBUG] Corpo completo da resposta da API /api/v1/fabrics:\n'
-  echo "${response_body}"
+  printf '%s\n' "${response_body}"
   printf '[ECHO-DEBUG] Parse com jq (.[] | .name, .uuid):\n'
   printf '%s' "${response_body}" | jq -r '.[] | "NOME: "+(.name|tostring)+" UUID: "+((.uuid//.id)|tostring)' 2>&1 || printf '[ECHO-DEBUG] Não foi possível fazer parse do JSON de fabrics.\n'
 
@@ -589,7 +589,7 @@ get_fabric_uuid() {
   if [[ -z "${fabric_uuid}" ]] || [[ "${fabric_uuid}" == "null" ]]; then
   printf '[ECHO-DEBUG] Fabric not found: %s\n' "${fabric_name}"
   printf '[ECHO-DEBUG] Available fabrics:\n'
-  printf '%s' "${response_body}" | jq -r '.[] | "\(.name) (\(.uuid // .id))"' 2>/dev/null || printf '[ECHO-DEBUG] Unable to parse fabric list\n'
+  printf '%s\n' "${response_body}" | jq -r '.[] | "\(.name) (\(.uuid // .id))"' 2>/dev/null || printf '[ECHO-DEBUG] Unable to parse fabric list\n'
   printf '[ECHO-DEBUG] jq error output (if any):\n'
     if [[ -f /tmp/jq_error_fabric_uuid.log ]]; then
       cat /tmp/jq_error_fabric_uuid.log
