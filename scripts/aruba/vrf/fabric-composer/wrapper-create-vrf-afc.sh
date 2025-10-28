@@ -475,22 +475,21 @@ run_create_vrf() {
         }
     fi
 
-    # Always pass all parameters explicitly, even if empty or default, to ensure Morpheus substitution
-    local args=(
-        --name "${ARUBA_VRF_NAME}"
-        --fabric "${ARUBA_FABRIC}"
-        --rd "${ARUBA_RD}"
-        --rt-import "${ARUBA_RT_IMPORT}"
-        --rt-export "${ARUBA_RT_EXPORT}"
-        --af "${ARUBA_AF}"
-        --vni "${ARUBA_VNI}"
-        --switches "${ARUBA_SWITCHES}"
-        --description "${ARUBA_DESCRIPTION}"
-        --max-sessions-mode "${ARUBA_MAX_SESSIONS_MODE}"
-        --max-cps-mode "${ARUBA_MAX_CPS_MODE}"
-        --max-sessions "${ARUBA_MAX_SESSIONS}"
-        --max-cps "${ARUBA_MAX_CPS}"
-    )
+    # Only pass parameters if they are not Morpheus placeholders
+    local args=()
+    [[ -n "${ARUBA_VRF_NAME}" && "${ARUBA_VRF_NAME}" != "<%=customOptions.ARUBA_VRF_NAME%>" ]] && args+=(--name "${ARUBA_VRF_NAME}")
+    [[ -n "${ARUBA_FABRIC}" && "${ARUBA_FABRIC}" != "<%=customOptions.ARUBA_FABRIC%>" ]] && args+=(--fabric "${ARUBA_FABRIC}")
+    [[ -n "${ARUBA_RD}" && "${ARUBA_RD}" != "<%=customOptions.ARUBA_RD%>" ]] && args+=(--rd "${ARUBA_RD}")
+    [[ -n "${ARUBA_RT_IMPORT}" && "${ARUBA_RT_IMPORT}" != "<%=customOptions.ARUBA_RT_IMPORT%>" ]] && args+=(--rt-import "${ARUBA_RT_IMPORT}")
+    [[ -n "${ARUBA_RT_EXPORT}" && "${ARUBA_RT_EXPORT}" != "<%=customOptions.ARUBA_RT_EXPORT%>" ]] && args+=(--rt-export "${ARUBA_RT_EXPORT}")
+    [[ -n "${ARUBA_AF}" && "${ARUBA_AF}" != "<%=customOptions.ARUBA_AF%>" ]] && args+=(--af "${ARUBA_AF}")
+    [[ -n "${ARUBA_VNI}" && "${ARUBA_VNI}" != "<%=customOptions.ARUBA_VNI%>" ]] && args+=(--vni "${ARUBA_VNI}")
+    [[ -n "${ARUBA_SWITCHES}" && "${ARUBA_SWITCHES}" != "<%=customOptions.ARUBA_SWITCHES%>" ]] && args+=(--switches "${ARUBA_SWITCHES}")
+    [[ -n "${ARUBA_DESCRIPTION}" && "${ARUBA_DESCRIPTION}" != "<%=customOptions.ARUBA_DESCRIPTION%>" ]] && args+=(--description "${ARUBA_DESCRIPTION}")
+    [[ -n "${ARUBA_MAX_SESSIONS_MODE}" && "${ARUBA_MAX_SESSIONS_MODE}" != "<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>" ]] && args+=(--max-sessions-mode "${ARUBA_MAX_SESSIONS_MODE}")
+    [[ -n "${ARUBA_MAX_CPS_MODE}" && "${ARUBA_MAX_CPS_MODE}" != "<%=customOptions.ARUBA_MAX_CPS_MODE%>" ]] && args+=(--max-cps-mode "${ARUBA_MAX_CPS_MODE}")
+    [[ -n "${ARUBA_MAX_SESSIONS}" && "${ARUBA_MAX_SESSIONS}" != "<%=customOptions.ARUBA_MAX_SESSIONS%>" ]] && args+=(--max-sessions "${ARUBA_MAX_SESSIONS}")
+    [[ -n "${ARUBA_MAX_CPS}" && "${ARUBA_MAX_CPS}" != "<%=customOptions.ARUBA_MAX_CPS%>" ]] && args+=(--max-cps "${ARUBA_MAX_CPS}")
     # Propagate no-install flag
     if [[ "${NO_INSTALL}" == "true" || "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
         args+=("--no-install")
