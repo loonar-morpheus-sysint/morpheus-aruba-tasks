@@ -853,6 +853,7 @@ create_vrf() {
 
   # Get fabric UUID from fabric name
   log_info "Resolving fabric name to UUID..."
+  log_info "DEBUG: Valor de FABRIC_NAME antes de get_fabric_uuid: '${FABRIC_NAME}'"
   if ! FABRIC_UUID=$(get_fabric_uuid "${FABRIC_NAME}"); then
     log_error "Failed to get fabric UUID"
     _log_func_exit_fail "create_vrf" "1"
