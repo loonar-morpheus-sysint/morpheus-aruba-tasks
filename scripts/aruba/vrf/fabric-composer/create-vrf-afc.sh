@@ -549,8 +549,9 @@ get_fabric_uuid() {
   local http_code
 
 
-  # Log the full curl command with all parameters rendered
-  log_info "[DEBUG-AFC] curl command: curl --max-time 15 --connect-timeout 5 -s -w '\n%{{http_code}}' -X GET -H 'Content-Type: application/json' -H 'Authorization: ${token}' -H 'X-Auth-Refresh-Token: true' --insecure '${api_url}'"
+
+  # Log the full curl command with all parameters rendered (ALWAYS echo for visibility)
+  printf '%s\n' "[ECHO-DEBUG] curl command: curl --max-time 15 --connect-timeout 5 -s -w '\n%{http_code}' -X GET -H 'Content-Type: application/json' -H 'Authorization: ${token}' -H 'X-Auth-Refresh-Token: true' --insecure '${api_url}'"
 
   log_info "[DEBUG-AFC] Chamando API /api/v1/fabrics: ${api_url}"
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
@@ -564,12 +565,14 @@ get_fabric_uuid() {
   local response_body
   response_body=$(echo "${response}" | sed '$d')
 
-  log_info "[DEBUG-AFC] HTTP Status Code: ${http_code}"
-  log_info "[DEBUG-AFC] Corpo bruto da resposta (até 500 chars): ${response_body:0:500}"
-  echo "[ECHO] Corpo bruto da resposta da API /api/v1/fabrics:"
+
+  # Always echo HTTP code and response for troubleshooting
+  printf '[ECHO-DEBUG] HTTP Status Code: %s\n' "${http_code}"
+  printf '[ECHO-DEBUG] Corpo bruto da resposta (primeiros 500 chars): %s\n' "${response_body:0:500}"
+  printf '[ECHO-DEBUG] Corpo completo da resposta da API /api/v1/fabrics:\n'
   echo "${response_body}"
-  echo "[ECHO] Parse com jq (.[] | .name, .uuid):"
-  echo "${response_body}" | jq -r '.[] | "NOME: "+(.name|tostring)+" UUID: "+((.uuid//.id)|tostring)' 2>&1 || echo "[DIAG] Não foi possível fazer parse do JSON de fabrics."
+  printf '[ECHO-DEBUG] Parse com jq (.[] | .name, .uuid):\n'
+  printf '%s' "${response_body}" | jq -r '.[] | "NOME: "+(.name|tostring)+" UUID: "+((.uuid//.id)|tostring)' 2>&1 || printf '[ECHO-DEBUG] Não foi possível fazer parse do JSON de fabrics.\n'
 
   if [[ "${http_code}" != "200" ]]; then
     log_error "Failed to retrieve fabrics (HTTP ${http_code})"
@@ -580,17 +583,19 @@ get_fabric_uuid() {
 
   # Search for fabric by name
   local fabric_uuid
+
   fabric_uuid=$(echo "${response_body}" | jq -r --arg name "${fabric_name}" '.[] | select(.name == $name) | .uuid // .id // empty' 2> >(tee /tmp/jq_error_fabric_uuid.log >&2) | head -n1)
 
   if [[ -z "${fabric_uuid}" ]] || [[ "${fabric_uuid}" == "null" ]]; then
-    log_error "Fabric not found: ${fabric_name}"
-    log_info "Available fabrics:"
-    echo "${response_body}" | jq -r '.[] | "\(.name) (\(.uuid // .id))"' 2>/dev/null || echo "Unable to parse fabric list"
-    log_error "[DEBUG-AFC] jq error output (if any):"
+  printf '[ECHO-DEBUG] Fabric not found: %s\n' "${fabric_name}"
+  printf '[ECHO-DEBUG] Available fabrics:\n'
+  printf '%s' "${response_body}" | jq -r '.[] | "\(.name) (\(.uuid // .id))"' 2>/dev/null || printf '[ECHO-DEBUG] Unable to parse fabric list\n'
+  printf '[ECHO-DEBUG] jq error output (if any):\n'
     if [[ -f /tmp/jq_error_fabric_uuid.log ]]; then
       cat /tmp/jq_error_fabric_uuid.log
     fi
-    log_error "[DEBUG-AFC] Full response body: ${response_body}"
+  printf '[ECHO-DEBUG] Full response body: %s\n' "${response_body}"
+    log_error "Fabric not found: ${fabric_name}"
     _log_func_exit_fail "get_fabric_uuid" "1"
     return 1
   fi
