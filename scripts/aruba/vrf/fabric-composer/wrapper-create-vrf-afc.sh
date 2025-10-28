@@ -371,12 +371,18 @@ validate_required_inputs() {
         fabric_trimmed="$(trim_all "${ARUBA_FABRIC}")"
         log_debug "[VALIDATE] ARUBA_VRF_NAME original: '${ARUBA_VRF_NAME}', trim: '${vrf_trimmed}'"
         log_debug "[VALIDATE] ARUBA_FABRIC original: '${ARUBA_FABRIC}', trim: '${fabric_trimmed}'"
-    if [[ -z "${vrf_trimmed}" || "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
-        log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME (valor atual: '${ARUBA_VRF_NAME}')"
+    if [[ "${ARUBA_VRF_NAME}" == "<%=customOptions.ARUBA_VRF_NAME%>" ]]; then
+        log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME (ainda é placeholder)"
+        errors=1
+    elif [[ -z "${vrf_trimmed}" ]]; then
+        log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME (valor vazio após trim: '${ARUBA_VRF_NAME}')"
         errors=1
     fi
-    if [[ -z "${fabric_trimmed}" || "${ARUBA_FABRIC}" == "<%=customOptions.ARUBA_FABRIC%>" ]]; then
-        log_error "Parâmetro obrigatório ausente: ARUBA_FABRIC (valor atual: '${ARUBA_FABRIC}')"
+    if [[ "${ARUBA_FABRIC}" == "<%=customOptions.ARUBA_FABRIC%>" ]]; then
+        log_error "Parâmetro obrigatório ausente: ARUBA_FABRIC (ainda é placeholder)"
+        errors=1
+    elif [[ -z "${fabric_trimmed}" ]]; then
+        log_error "Parâmetro obrigatório ausente: ARUBA_FABRIC (valor vazio após trim: '${ARUBA_FABRIC}')"
         errors=1
     fi
 
