@@ -533,6 +533,7 @@ run_create_vrf() {
     dry=$(normalize_bool "${MORPHEUS_DRY_RUN:-}")
     [[ "${dry}" == "true" ]] && args+=("--dry-run") # pragma: allowlist secret
 
+
     log_info "Invocando create-vrf-afc.sh com argumentos: ${args[*]}"
     # As variáveis de credencial já estão exportadas para o ambiente
     # Stream both stdout and stderr from the child script, prefixing for clarity

@@ -540,7 +540,7 @@ get_fabric_uuid() {
     return 1
   fi
 
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/api/fabrics"
+  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/fabrics?count_only=true&only_with_switches=true"
 
 
 
@@ -658,7 +658,7 @@ get_fabric_switches() {
   fi
 
   # Build API URL for switches in the fabric
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/api/fabrics/${fabric_uuid}/switches"
+  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/fabrics/${fabric_uuid}/switches"
   local token
   if ! token=$(read_token); then
     log_error "Failed to read authentication token"
