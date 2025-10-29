@@ -542,16 +542,40 @@ get_fabric_uuid() {
 
   local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/fabrics"
 
+
+
+
+
+
+
+
+
+
+
+echo "===================== AQUI 1 ========================="
+echo "$api_url"
+
+
+
+
+
+
+
+
+
+
   log_info "Searching for fabric: ${fabric_name}"
 
 
   local response
   local http_code
 
-
-
   # Log the full curl command with all parameters rendered (ALWAYS echo for visibility)
   printf '%s\n' "[ECHO-DEBUG] curl command: curl --max-time 15 --connect-timeout 5 -s -w '\n%{http_code}' -X GET -H 'Content-Type: application/json' -H 'Authorization: ${token}' -H 'X-Auth-Refresh-Token: true' --insecure '${api_url}'"
+
+
+
+
 
   log_info "[DEBUG-AFC] Chamando API /api/v1/fabrics: ${api_url}"
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
@@ -878,7 +902,7 @@ create_vrf() {
 
 
 
-echo "================= AQUI ======================="
+echo "================= AQUI 2 ======================="
 get_fabric_uuid "${FABRIC_NAME}"
 
 
