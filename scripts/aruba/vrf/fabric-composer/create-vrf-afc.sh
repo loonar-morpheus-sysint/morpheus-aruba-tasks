@@ -579,7 +579,7 @@ echo "$api_url"
   local http_code
 
   # Log the full curl command with all parameters rendered (ALWAYS echo for visibility)
-  printf '%s\n' "[ECHO-DEBUG] curl command: curl --max-time 15 --connect-timeout 5 -s -w '\n%{http_code}' -X GET -H 'Content-Type: application/json' -H 'Authorization: ${token}' -H 'X-Auth-Refresh-Token: true' --insecure '${api_url}'"
+  printf '%s\n' "[ECHO-DEBUG] curl command: curl --max-time 15 --connect-timeout 5 -s -w '\n%{http_code}' -X GET -H 'Content-Type: application/json' -H 'accept: application/json; version=1.0' -H 'Authorization: ${token}' -H 'X-Auth-Refresh-Token: true' --insecure '${api_url}'"
 
 
 
