@@ -588,6 +588,7 @@ echo "$api_url"
   log_info "[DEBUG-AFC] Chamando API /api/v1/fabrics: ${api_url}"
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
+    -H "accept: application/json; version=1.0" \
     -H "Authorization: ${token}" \
     -H "X-Auth-Refresh-Token: true" \
     --insecure \
@@ -685,6 +686,7 @@ get_fabric_switches() {
   local response http_code response_body
   response=$(curl --max-time 15 --connect-timeout 5 -s -w "\n%{http_code}" -X GET \
     -H "Content-Type: application/json" \
+    -H "accept: application/json; version=1.0" \
     -H "Authorization: ${token}" \
     -H "X-Auth-Refresh-Token: true" \
     --insecure \
