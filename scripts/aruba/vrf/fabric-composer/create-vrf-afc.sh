@@ -540,7 +540,15 @@ get_fabric_uuid() {
     return 1
   fi
 
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/fabrics?count_only=true&only_with_switches=true"
+  local url_base
+  if [[ "${FABRIC_COMPOSER_PROTOCOL}" == "https" && "${FABRIC_COMPOSER_PORT}" == "443" ]]; then
+    url_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}"
+  elif [[ "${FABRIC_COMPOSER_PROTOCOL}" == "http" && "${FABRIC_COMPOSER_PORT}" == "80" ]]; then
+    url_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}"
+  else
+    url_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}"
+  fi
+  local api_url="${url_base}/api/fabrics?count_only=true&only_with_switches=true"
 
 
 
@@ -658,7 +666,15 @@ get_fabric_switches() {
   fi
 
   # Build API URL for switches in the fabric
-  local api_url="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/fabrics/${fabric_uuid}/switches"
+  local url_base
+  if [[ "${FABRIC_COMPOSER_PROTOCOL}" == "https" && "${FABRIC_COMPOSER_PORT}" == "443" ]]; then
+    url_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}"
+  elif [[ "${FABRIC_COMPOSER_PROTOCOL}" == "http" && "${FABRIC_COMPOSER_PORT}" == "80" ]]; then
+    url_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}"
+  else
+    url_base="${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}"
+  fi
+  local api_url="${url_base}/api/fabrics/${fabric_uuid}/switches"
   local token
   if ! token=$(read_token); then
     log_error "Failed to read authentication token"
