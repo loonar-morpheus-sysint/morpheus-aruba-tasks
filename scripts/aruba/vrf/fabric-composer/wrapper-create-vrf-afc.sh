@@ -44,9 +44,9 @@ fi
 
 echo "$AFC_API_JSON"
 # Limpa e valida JSON
-AFC_URL="$(extract_json "$AFC_API_JSON" "URL")"
-USER="$(extract_json "$AFC_API_JSON" username)"
-PASS="$(extract_json "$AFC_API_JSON" password)"
+USER="$(echo "$AFC_API_JSON" | jq -r '.username')"
+PASS="$(echo "$AFC_API_JSON" | jq -r '.password')"
+AFC_URL="$(echo "$AFC_API_JSON" | jq -r '.URL' | sed 's:/*$::')"
 
 
 main() {
