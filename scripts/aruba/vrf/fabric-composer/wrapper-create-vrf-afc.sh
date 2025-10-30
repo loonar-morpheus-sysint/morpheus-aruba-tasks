@@ -39,9 +39,11 @@ echo "ARUBA_FABRIC: $ARUBA_FABRIC"
 AFC_API_JSON='<%=cypher.read('secret/AFC_API')%>'
 echo "$AFC_API_JSON"
 
-# Facilita testes locais: se AFC_API_JSON não for um JSON válido, usa exemplo
-if ! echo "$AFC_API_JSON" | jq . >/dev/null 2>&1; then
+AFC_API_JSON_CLEAN=$(echo "$AFC_API_JSON" | tr -d '\r' | sed ':a;N;$!ba;s/\n//g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+if ! echo "$AFC_API_JSON_CLEAN" | jq . >/dev/null 2>&1; then
     echo "[WARN] AFC_API_JSON inválido, usando valores de teste locais."
+else
+    AFC_API_JSON="$AFC_API_JSON_CLEAN"
 fi
 AFC_URL="$(extract_json "$AFC_API_JSON" URL | sed 's:/*$::')"
 USER="$(extract_json "$AFC_API_JSON" username)"
