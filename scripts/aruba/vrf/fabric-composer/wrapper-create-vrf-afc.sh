@@ -5,7 +5,7 @@ set -euo pipefail
 # Sourcing seguro do commons.sh (lib/commons.sh)
 
 # Sourcing robusto do commons.sh (lib/commons.sh)
-COMMONS_PATH="./commons.sh"
+COMMONS_PATH="../commons.sh"
 if [[ -f "$COMMONS_PATH" ]]; then
     # shellcheck disable=SC1090
     source "$COMMONS_PATH"
