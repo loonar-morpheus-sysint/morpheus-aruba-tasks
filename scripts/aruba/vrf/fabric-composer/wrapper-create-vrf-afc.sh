@@ -7,8 +7,9 @@ set -euo pipefail
 # Sourcing robusto do commons.sh (lib/commons.sh)
 
 # Sourcing robusto do commons.sh (lib/commons.sh)
+# Sourcing robusto do commons.sh (lib/commons.sh)
 _SRC_PATH="${BASH_SOURCE[0]:-$0}"
-_SCRIPT_DIR="$(cd "$(dirname "$_SRC_PATH")" && pwd)"
+_SCRIPT_DIR="$(cd "$(dirname "$(realpath "$_SRC_PATH")")" && pwd)"
 COMMONS_PATH="$_SCRIPT_DIR/../../../../lib/commons.sh"
 if [[ -f "$COMMONS_PATH" ]]; then
     # shellcheck disable=SC1090
