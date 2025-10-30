@@ -83,12 +83,12 @@ AFC_URL="$(echo "$AFC_API_JSON" | jq -r '.URL' | sed 's:/*$::')"
 main() {
     _log_func_enter "main"
 
-    # Validação de dependências
-    check_dependencies jq curl || {
-        log_error "Dependências ausentes: jq e curl são necessários."
-        _log_func_exit_fail
-        return 1
-    }
+    # # Validação de dependências
+    # check_dependencies jq curl || {
+    #     log_error "Dependências ausentes: jq e curl são necessários."
+    #     _log_func_exit_fail
+    #     return 1
+    # }
 
     if [[ -z "$ARUBA_VRF_NAME" || -z "$ARUBA_FABRIC" ]]; then
         log_error "ARUBA_VRF_NAME e ARUBA_FABRIC devem ser definidos."
