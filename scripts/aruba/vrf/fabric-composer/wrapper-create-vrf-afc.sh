@@ -182,7 +182,9 @@ EOF
 
 
 # Proteção de sourcing
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+
+# Proteção de sourcing: executa main se script for chamado diretamente
+if [[ -z "${BASH_SOURCE[0]+x}" ]] || [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     main "$@"
 fi
 
