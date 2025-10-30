@@ -3,6 +3,35 @@ set -euo pipefail
 # Script: wrapper-create-vrf-afc.sh
 # Description: Cria um VRF no Aruba Fabric Composer, parametrizado por variáveis ARUBA_VRF_NAME e ARUBA_FABRIC.
 
+if ! command -v jq >/dev/null 2>&1; then
+    if [[ -d "/opt/morpheus" ]]; then
+        jq_dir="/opt/morpheus/.local/bin"
+    else
+        jq_dir="/usr/local/bin"
+    fi
+    jq_path="${jq_dir}/jq"
+    download_url="https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64"
+    if ! mkdir -p "${jq_dir}" 2>/dev/null || ! touch "${jq_dir}/.write_test" 2>/dev/null; then
+        jq_dir="${HOME}/.local/bin"
+        jq_path="${jq_dir}/jq"
+        mkdir -p "${jq_dir}"
+    fi
+    rm -f "${jq_dir}/.write_test" 2>/dev/null || true
+    if command -v curl >/dev/null 2>&1; then
+        curl -L -sSf -o "${jq_path}" "${download_url}"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "${jq_path}" "${download_url}"
+    else
+        echo "ERROR: Neither curl nor wget are available to download jq"
+        exit 1
+    fi
+    chmod +x "${jq_path}" 2>/dev/null || true
+    export PATH="$PATH:${jq_dir}"
+fi
+
+
+
+
 _SRC_PATH="${BASH_SOURCE[0]:-$0}"
 _SCRIPT_DIR="$(cd "$(dirname "$(realpath \"$_SRC_PATH\")")" && pwd)"
 # Busca ascendente até encontrar lib/commons.sh
