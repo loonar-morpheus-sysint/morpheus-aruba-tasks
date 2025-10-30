@@ -31,7 +31,8 @@ fi
 
 ARUBA_VRF_NAME="${ARUBA_VRF_NAME:-<%=customOptions.ARUBA_VRF_NAME%>}"
 ARUBA_FABRIC="${ARUBA_FABRIC:-<%=customOptions.ARUBA_FABRIC%>}"
-
+echo "ARUBA_VRF_NAME: $ARUBA_VRF_NAME"
+echo "ARUBA_FABRIC: $ARUBA_FABRIC"
 
 # Obtém dados sensíveis do cypher e extrai variáveis
 AFC_API_JSON="<%=cypher.read('secret/AFC_API')%>"
