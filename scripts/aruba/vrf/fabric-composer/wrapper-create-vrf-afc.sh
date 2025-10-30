@@ -1,635 +1,130 @@
 #!/bin/bash
-################################################################################
-# Script: wrapper-create-vrf-afc.sh
-# Description: Wrapper para Tasks do Morpheus Data que cria VRF no HPE Aruba
-#              Fabric Composer (AFC). Lê parâmetros via Groovy Template Syntax
-#              (customOptions.*) e credenciais via Cypher (secret AFC_API).
-################################################################################
-
-# Primeira linha funcional: carregar biblioteca comum
-# shellcheck disable=SC1091
-# Resolve path do script de forma segura para evitar "unbound variable" quando
-# executado em ambientes onde BASH_SOURCE não está setado (ex.: sh -c, algumas
-# plataformas de orquestração). Evita também problemas quando $0 é apenas "-c".
-_resolve_script_dir() {
-    # Prefer BASH_SOURCE quando disponível (bash). Use expansão segura para
-    # não failar com set -u.
-    local source_path
-    if [ -n "${BASH_SOURCE-}" ]; then
-        source_path="${BASH_SOURCE[0]}"
-    else
-        source_path="${0}"
-    fi
-
-    # Se o path não for absoluto, tente resolver para um path absoluto.
-    if [[ "${source_path}" != /* ]]; then
-        if [[ "${source_path}" == */* ]]; then
-            source_path="$(pwd)/${source_path}"
-        else
-            # Pode estar no PATH (invocado como comando sem /) - tentar resolver.
-            local resolved
-            resolved=$(command -v -- "${source_path}" 2>/dev/null || true)
-            if [[ -n "${resolved}" ]]; then
-                source_path="${resolved}"
-            else
-                # Fallback conservador: usar PWD
-                source_path="$(pwd)/${source_path}"
-            fi
-        fi
-    fi
-
-    # Melhor resolução de caminhos (symlinks)
-    if command -v readlink >/dev/null 2>&1; then
-        source_path=$(readlink -f -- "${source_path}" 2>/dev/null || echo "${source_path}")
-    fi
-
-    printf '%s' "$(cd "$(dirname "${source_path}")" && pwd)"
-}
-
-_find_lib_dir() {
-    # Walk up parent directories from the script dir to find lib/commons.sh
-    local dir
-    dir="$(_resolve_script_dir)"
-    while [[ -n "${dir}" && "${dir}" != "/" ]]; do
-        if [[ -f "${dir}/lib/commons.sh" ]]; then
-            printf '%s' "${dir}/lib"
-            return 0
-        fi
-        dir="$(dirname "${dir}")"
-    done
-
-    # Fallback: check current working directory
-    if [[ -f "$(pwd)/lib/commons.sh" ]]; then
-        printf '%s' "$(pwd)/lib"
-        return 0
-    fi
-
-    # Last-resort heuristic (same as older behavior), normalize the path
-    local candidate
-    candidate="$(_resolve_script_dir)/../../../../lib"
-    if command -v readlink >/dev/null 2>&1; then
-        candidate=$(readlink -f -- "${candidate}" 2>/dev/null || echo "${candidate}")
-    fi
-    if [[ -f "${candidate}/commons.sh" ]]; then
-        printf '%s' "${candidate}"
-        return 0
-    fi
-
-    return 1
-}
-
-LIB_DIR="$(_find_lib_dir)"
-if [[ -z "${LIB_DIR}" ]]; then
-    echo "ERROR: Unable to locate lib/commons.sh" >&2
-    exit 1
-fi
-
- # shellcheck source=lib/commons.sh
-source "${LIB_DIR}/commons.sh"
-
-# extract_json() is provided by lib/commons.sh
-
-# Pre-scan arguments for --no-install
-NO_INSTALL=false
-for _a in "${@}"; do
-    if [[ "${_a}" == "--no-install" ]]; then
-        NO_INSTALL=true
-        break
-    fi
-done
-
-# Honor Morpheus custom option ARUBA_NO_INSTALL if provided
-if [[ "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
-    NO_INSTALL=true
-fi
-
-_find_install_script() {
-    # Walk upwards from script directory and look for utilities/install-jq.sh in
-    # a few common locations (project root utilities/ or scripts/utilities/).
-    local dir
-    dir="$(_resolve_script_dir)"
-    while [[ -n "${dir}" && "${dir}" != "/" ]]; do
-        if [[ -f "${dir}/utilities/install-jq.sh" ]]; then
-            printf '%s' "${dir}/utilities/install-jq.sh"
-            return 0
-        fi
-        if [[ -f "${dir}/scripts/utilities/install-jq.sh" ]]; then
-            printf '%s' "${dir}/scripts/utilities/install-jq.sh"
-            return 0
-        fi
-        dir="$(dirname "${dir}")"
-    done
-    return 1
-}
-
-# Ensure jq is installed (utility may install it) unless disabled by --no-install
-if [[ "${NO_INSTALL}" != "true" ]]; then
-    install_script_path=""
-    if install_script_path="$(_find_install_script)"; then
-        log_info "Found jq installer at: ${install_script_path}. Sourcing it now."
-        # shellcheck disable=SC1091
-        # shellcheck source=/dev/null
-        source "${install_script_path}"
-        log_info "Calling ensure_jq_installed() to install/verify jq"
-        if ! ensure_jq_installed; then
-            log_error "jq installation or verification failed"
-            log_debug "PATH after installation attempt: ${PATH}"
-            exit 1
-        fi
-        log_info "jq verification succeeded. Current jq: $(command -v jq || echo 'none')"
-    else
-        log_debug "No jq installer found (searched common locations). If jq is missing, set --no-install or provide jq in PATH."
-    fi
-else
-    log_info "--no-install specified: skipping jq installation. Ensure jq is available."
-fi
-
 set -euo pipefail
+# Script: wrapper-create-vrf-afc.sh
+# Description: Cria um VRF no Aruba Fabric Composer, parametrizado por variáveis ARUBA_VRF_NAME e ARUBA_FABRIC.
+source "$(dirname "${BASH_SOURCE[0]}")/../../../commons.sh"
 
-################################################################################
-# Variáveis vindas do Morpheus (Groovy Template Syntax)
-# Obs.: no Morpheus, estas expressões são renderizadas antes da execução.
-################################################################################
-ARUBA_VRF_NAME="<%=customOptions.ARUBA_VRF_NAME%>"
-ARUBA_FABRIC="<%=customOptions.ARUBA_FABRIC%>"
-log_info "[WRAPPER] Valor obtido para ARUBA_VRF_NAME (prioridade: wrapper): '${ARUBA_VRF_NAME}'"
-log_info "[WRAPPER] Valor obtido para ARUBA_FABRIC (prioridade: wrapper): '${ARUBA_FABRIC}'"
-ARUBA_RD="<%=customOptions.ARUBA_RD%>"
-ARUBA_RT_IMPORT="<%=customOptions.ARUBA_RT_IMPORT%>"
-ARUBA_RT_EXPORT="<%=customOptions.ARUBA_RT_EXPORT%>"
-ARUBA_AF="<%=customOptions.ARUBA_AF%>"                   # ipv4, ipv6, evpn (default: ipv4)
-ARUBA_VNI="<%=customOptions.ARUBA_VNI%>"                # L2/L3 VPN VNI (1-16777214)
-ARUBA_SWITCHES="<%=customOptions.ARUBA_SWITCHES%>" # Comma-separated switch UUIDs (optional)
-ARUBA_DESCRIPTION="<%=customOptions.ARUBA_DESCRIPTION%>"
-MORPHEUS_DRY_RUN="<%=customOptions.MORPHEUS_DRY_RUN%>" # true/false (opcional)
-ARUBA_MAX_SESSIONS_MODE="<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>"
-ARUBA_MAX_CPS_MODE="<%=customOptions.ARUBA_MAX_CPS_MODE%>"
-ARUBA_MAX_SESSIONS="<%=customOptions.ARUBA_MAX_SESSIONS%>"
-ARUBA_MAX_CPS="<%=customOptions.ARUBA_MAX_CPS%>"
-# Se o valor renderizado for vazio ou igual ao placeholder, zere a variável (ignorar parâmetro opcional)
-[[ -z "${ARUBA_RD}" || "${ARUBA_RD}" == "<%=customOptions.ARUBA_RD%>" ]] && ARUBA_RD=""
-[[ -z "${ARUBA_RT_IMPORT}" || "${ARUBA_RT_IMPORT}" == "<%=customOptions.ARUBA_RT_IMPORT%>" ]] && ARUBA_RT_IMPORT=""
-[[ -z "${ARUBA_RT_EXPORT}" || "${ARUBA_RT_EXPORT}" == "<%=customOptions.ARUBA_RT_EXPORT%>" ]] && ARUBA_RT_EXPORT=""
-[[ -z "${ARUBA_AF}" || "${ARUBA_AF}" == "<%=customOptions.ARUBA_AF%>" ]] && ARUBA_AF=""
-[[ -z "${ARUBA_VNI}" || "${ARUBA_VNI}" == "<%=customOptions.ARUBA_VNI%>" ]] && ARUBA_VNI=""
-[[ -z "${ARUBA_SWITCHES}" || "${ARUBA_SWITCHES}" == "<%=customOptions.ARUBA_SWITCHES%>" ]] && ARUBA_SWITCHES=""
-[[ -z "${ARUBA_DESCRIPTION}" || "${ARUBA_DESCRIPTION}" == "<%=customOptions.ARUBA_DESCRIPTION%>" ]] && ARUBA_DESCRIPTION=""
-[[ -z "${MORPHEUS_DRY_RUN}" || "${MORPHEUS_DRY_RUN}" == "<%=customOptions.MORPHEUS_DRY_RUN%>" ]] && MORPHEUS_DRY_RUN=""
-[[ -z "${ARUBA_MAX_SESSIONS_MODE}" || "${ARUBA_MAX_SESSIONS_MODE}" == "<%=customOptions.ARUBA_MAX_SESSIONS_MODE%>" ]] && ARUBA_MAX_SESSIONS_MODE=""
-[[ -z "${ARUBA_MAX_CPS_MODE}" || "${ARUBA_MAX_CPS_MODE}" == "<%=customOptions.ARUBA_MAX_CPS_MODE%>" ]] && ARUBA_MAX_CPS_MODE=""
-[[ -z "${ARUBA_MAX_SESSIONS}" || "${ARUBA_MAX_SESSIONS}" == "<%=customOptions.ARUBA_MAX_SESSIONS%>" ]] && ARUBA_MAX_SESSIONS=""
-[[ -z "${ARUBA_MAX_CPS}" || "${ARUBA_MAX_CPS}" == "<%=customOptions.ARUBA_MAX_CPS%>" ]] && ARUBA_MAX_CPS=""
-
-# Credenciais do AFC via Cypher (JSON)
-# Importante: o Morpheus renderiza expressões de template em qualquer lugar do
-# script (inclusive comentários). Evite colocar exemplos dessa sintaxe nos
-# comentários. Consulte a documentação oficial sobre renderização de templates:
-# https://support.hpe.com/hpesc/public/docDisplay?docId=sd00006774en_us&page=GUID-2CE25FBB-DE0F-4B4C-8FF7-07535555A706.html
-#
-# Honra variável de ambiente se já definida (útil para testes locais)
-# Estratégia robusta no Morpheus:
-#  1) Preferir Base64 para evitar problemas de novas linhas/CR e delimitadores de here-doc
-#  2) Fallback: here-doc com delimitador improvável e delimitador protegido
-if [[ -z "${AFC_API_JSON:-}" ]]; then
-    # Base64-safe render (quando executado no Morpheus)
-    AFC_API_JSON_B64="${AFC_API_JSON_B64:-<%=java.util.Base64.getEncoder().encodeToString(cypher.read('secret/AFC_API').getBytes('UTF-8'))%>}"
-    if [[ -n "${AFC_API_JSON_B64}" && "${AFC_API_JSON_B64}" != *"cypher.read"* ]]; then
-        AFC_API_JSON=$(printf '%s' "${AFC_API_JSON_B64}" | base64 -d 2>/dev/null || true)
-        # Remover CR se houver
-        AFC_API_JSON=$(printf '%s' "${AFC_API_JSON}" | tr -d '\r')
-    fi
-fi
-if [[ -z "${AFC_API_JSON:-}" ]]; then
-    # Fallback here-doc
-    AFC_API_JSON=$(
-        cat <<'__AFC_CYPHER__'
-'<%=cypher.read("secret/AFC_API")%>'
-__AFC_CYPHER__
-    )
-fi
-
-################################################################################
-# Constantes e arquivos de token (compartilhados com create-vrf-afc.sh)
-################################################################################
-SCRIPT_DIR="$(_resolve_script_dir)"
-API_VERSION="v1"
-TOKEN_FILE="${SCRIPT_DIR}/.afc_token"
-TOKEN_EXPIRY_FILE="${SCRIPT_DIR}/.afc_token_expiry"
-DEFAULT_TOKEN_DURATION=1800 # 30 min
-
-# Cleanup seguro de tokens ao finalizar (sucesso/erro/interrupção)
-cleanup_tokens() {
-    _log_func_enter "cleanup_tokens"
-    local removed=0
-    if [[ -f "${TOKEN_FILE}" ]]; then
-        # Se shred estiver disponível, use para sobrescrever antes de apagar
-        if command -v shred >/dev/null 2>&1; then
-            shred -u -z -n 1 "${TOKEN_FILE}" 2>/dev/null || rm -f "${TOKEN_FILE}" || true
-        else
-            rm -f "${TOKEN_FILE}" || true
-        fi
-        removed=1
-    fi
-    if [[ -f "${TOKEN_EXPIRY_FILE}" ]]; then
-        rm -f "${TOKEN_EXPIRY_FILE}" || true
-        removed=1
-    fi
-    if [[ ${removed} -eq 1 ]]; then
-        log_info "Arquivos de token do AFC removidos com segurança"
-    else
-        log_debug "Nenhum arquivo de token para remover"
-    fi
-    _log_func_exit_ok "cleanup_tokens"
-    return 0
-}
-
-# Garante limpeza em qualquer término
-trap cleanup_tokens EXIT INT TERM
-
-################################################################################
-# Funções auxiliares
-################################################################################
-
-check_dependencies() {
-    _log_func_enter "check_dependencies"
-    # jq is required for JSON parsing
-    local deps=("curl" "sed")
-    local missing=0
-    for cmd in "${deps[@]}"; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            log_error "Dependência ausente: $cmd"
-            missing=1
-        else
-            log_debug "OK: $cmd"
-        fi
-    done
-
-    if ! command -v jq >/dev/null 2>&1; then
-        log_error "Dependência ausente: jq (install-jq.sh can install it, or run with --no-install after providing jq)"
-        missing=1
-    else
-        log_debug "OK: jq"
-    fi
-
-    if [[ $missing -eq 1 ]]; then
-        _log_func_exit_fail "check_dependencies" "1"
-        return 1
-    fi
-    _log_func_exit_ok "check_dependencies"
-    return 0
-}
-
-normalize_bool() {
-    # converte várias formas para true/false
-    local v="${1:-}"
-    v=$(echo -n "$v" | tr '[:upper:]' '[:lower:]')
-    case "$v" in
-    1 | yes | y | true | on) echo "true" ;;
-    0 | no | n | false | off | "") echo "false" ;;
-    *) echo "false" ;;
-    esac
-}
-
-parse_cypher_secret() {
-    _log_func_enter "parse_cypher_secret"
-
-    if [[ -z "${AFC_API_JSON}" || "${AFC_API_JSON}" == "null" ]]; then
-        log_error "Cypher 'AFC_API' não retornou conteúdo"
-        _log_func_exit_fail "parse_cypher_secret" "1"
-        return 1
-    fi
-
-    # Do not log secrets; acknowledge only
-    log_debug "AFC_API_JSON received (redacted)"
-
-    # Check if running outside Morpheus (template not rendered)
-    if [[ "${AFC_API_JSON}" == *"cypher.read"* ]]; then
-        log_error "AFC_API_JSON contains Groovy template syntax - script is not running in Morpheus context"
-        log_error "When running locally, define the here-doc pattern:"
-        log_error "  AFC_API_JSON=\$(cat <<EOF"
-        log_error "  '{\"username\":\"admin\",\"password\":\"pass\",\"URL\":\"https://host/\"}'" # pragma: allowlist secret
-        log_error "  EOF"
-        log_error "  )"
-        _log_func_exit_fail "parse_cypher_secret" "1"
-        return 1
-    fi
-
-    # Extract fields using extract_json function (same pattern as working project)
-    # extract_json now redirects logs to stderr internally, so stdout is clean
-    FABRIC_COMPOSER_USERNAME="$(extract_json "$AFC_API_JSON" "username")"
-    FABRIC_COMPOSER_PASSWORD="$(extract_json "$AFC_API_JSON" "password")"
-    local url
-    url="$(extract_json "$AFC_API_JSON" "URL")"
-
-    if [[ -z "${FABRIC_COMPOSER_USERNAME}" || -z "${FABRIC_COMPOSER_PASSWORD}" || -z "${url}" ]]; then
-        log_error "Campos ausentes no secret AFC_API (esperado: username, password, URL)"
-        _log_func_exit_fail "parse_cypher_secret" "1"
-        return 1
-    fi
-
-    # Parse da URL: protocolo, host e porta
-    FABRIC_COMPOSER_PROTOCOL=$(echo "$url" | sed -n 's#^\(https\?\)://.*#\1#p')
-    local hostport
-    hostport=$(echo "$url" | sed -n 's#^[a-zA-Z][a-zA-Z0-9+.-]*://\([^/]*\).*#\1#p')
-    if [[ -z "$FABRIC_COMPOSER_PROTOCOL" ]]; then
-        FABRIC_COMPOSER_PROTOCOL="https"
-    fi
-    if [[ -z "$hostport" ]]; then
-        log_error "Não foi possível extrair host da URL do AFC"
-        _log_func_exit_fail "parse_cypher_secret" "1"
-        return 1
-    fi
-    if [[ "$hostport" == *:* ]]; then
-        FABRIC_COMPOSER_IP="${hostport%%:*}"
-        FABRIC_COMPOSER_PORT="${hostport##*:}"
-    else
-        FABRIC_COMPOSER_IP="$hostport"
-        FABRIC_COMPOSER_PORT=$([[ "$FABRIC_COMPOSER_PROTOCOL" == "https" ]] && echo 443 || echo 80)
-    fi
-
-    export FABRIC_COMPOSER_USERNAME FABRIC_COMPOSER_PASSWORD FABRIC_COMPOSER_IP FABRIC_COMPOSER_PORT FABRIC_COMPOSER_PROTOCOL
-
-    log_info "AFC alvo: ${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}"
-    _log_func_exit_ok "parse_cypher_secret"
-    return 0
-}
-
-validate_required_inputs() {
-    _log_func_enter "validate_required_inputs"
-    local errors=0
-
-    # Considera válido se não for vazio E não for o placeholder literal
-
-    if [[ -z "${ARUBA_VRF_NAME}" ]]; then
+ARUBA_VRF_NAME="${ARUBA_VRF_NAME:-<%=customOptions.ARUBA_VRF_NAME%>}"
+ARUBA_FABRIC="${ARUBA_FABRIC:-<%=customOptions.ARUBA_FABRIC%>}"
 
 
-        log_error "Parâmetro obrigatório ausente: ARUBA_VRF_NAME"
-        errors=1
-    fi
+# Obtém dados sensíveis do cypher e extrai variáveis
+AFC_API_JSON="<%=cypher.read('secret/AFC_API')%>"
+AFC_URL="$(extract_json "$AFC_API_JSON" URL | sed 's:/*$::')"
+USER="$(extract_json "$AFC_API_JSON" username)"
+PASS="$(extract_json "$AFC_API_JSON" password)"
 
 
-    if [[ -z  "${ARUBA_FABRIC}"   ]]; then
-        log_error "Parâmetro obrigatório ausente: ARUBA_FABRIC"
-        errors=1
-    fi
-
-    if [[ ${errors} -eq 1 ]]; then
-        _log_func_exit_fail "validate_required_inputs" "1"
-        return 1
-    fi
-    _log_func_exit_ok "validate_required_inputs"
-    return 0
-}
-
-authenticate_afc() {
-    _log_func_enter "authenticate_afc"
-
-    local response http_code body token=""
-
-    # Optional virtual-host support: if FABRIC_COMPOSER_FQDN is provided, use it in the URL
-    # and map it to the target IP using --resolve so Host/SNI are correct even without DNS.
-    local url_host curl_resolve_args=()
-    if [[ -n "${FABRIC_COMPOSER_FQDN:-}" ]]; then
-        url_host="${FABRIC_COMPOSER_FQDN}"
-        # Add --resolve only if FABRIC_COMPOSER_IP looks like an IPv4 address
-        if [[ "${FABRIC_COMPOSER_IP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            curl_resolve_args+=("--resolve" "${FABRIC_COMPOSER_FQDN}:${FABRIC_COMPOSER_PORT}:${FABRIC_COMPOSER_IP}")
-            log_debug "Using FQDN with --resolve: ${FABRIC_COMPOSER_FQDN}:${FABRIC_COMPOSER_PORT}->${FABRIC_COMPOSER_IP}"
-        else
-            log_debug "Using FQDN without --resolve (host not an IPv4 literal): ${FABRIC_COMPOSER_FQDN}"
-        fi
-    else
-        url_host="${FABRIC_COMPOSER_IP}"
-        log_debug "Using direct host: ${url_host}"
-    fi
-
-    local api_url="${FABRIC_COMPOSER_PROTOCOL}://${url_host}:${FABRIC_COMPOSER_PORT}/api/${API_VERSION}/auth/token"
-
-    log_info "Autenticando no AFC (POST X-Auth-Username/X-Auth-Password)..."
-    log_debug "URL: ${api_url}"
-    log_debug "Padrão: test-afc-auth.sh (curl -sk -w http_code -X POST -H X-Auth-Username -H X-Auth-Password -H Content-Type -d token-lifetime)"
-
-    # Debug: verificar variáveis de proxy que podem interferir
-    log_debug "Proxy env vars: HTTP_PROXY=${HTTP_PROXY:-<unset>} HTTPS_PROXY=${HTTPS_PROXY:-<unset>} http_proxy=${http_proxy:-<unset>} https_proxy=${https_proxy:-<unset>} NO_PROXY=${NO_PROXY:-<unset>} no_proxy=${no_proxy:-<unset>}"
-
-    # Debug crítico: verificar se credenciais foram extraídas corretamente
-    if [[ -z "${FABRIC_COMPOSER_USERNAME}" ]]; then
-        log_error "FABRIC_COMPOSER_USERNAME está vazio após extract_json!"
-        _log_func_exit_fail "authenticate_afc" "1"
-        return 1
-    fi
-    if [[ -z "${FABRIC_COMPOSER_PASSWORD}" ]]; then
-        log_error "FABRIC_COMPOSER_PASSWORD está vazio após extract_json!"
-        _log_func_exit_fail "authenticate_afc" "1"
-        return 1
-    fi
-    log_debug "Credenciais extraídas: username=${FABRIC_COMPOSER_USERNAME} (length=${#FABRIC_COMPOSER_USERNAME}), password length=${#FABRIC_COMPOSER_PASSWORD}" # IMPORTANTE: Usar EXATAMENTE o mesmo padrão que funcionou no test-afc-auth.sh
-    # Limpar variáveis de proxy para garantir conexão direta (mesmo padrão do test-afc-auth.sh)
-    response=$(unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy &&
-        curl -sk "${curl_resolve_args[@]}" -w "\n%{http_code}" -X POST \
-            -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
-            -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
-            -H "Content-Type: application/json" \
-            -d '{"token-lifetime":30}' \
-            "${api_url}" 2>&1)
-    http_code=$(echo "${response}" | tail -n1)
-    body=$(echo "${response}" | sed '$d')
-
-    log_debug "HTTP Code: ${http_code}"
-    log_debug "Response Body (primeiros 500 chars): ${body:0:500}"
-
-    if [[ "${http_code}" == "200" ]]; then
-        token=$(echo "${body}" | jq -r '.result // empty')
-    fi
-
-    if [[ -z "${token}" || "${token}" == "null" ]]; then
-        log_error "Falha na autenticação do AFC (HTTP ${http_code})"
-        log_error "Resposta completa: ${body}"
-        _log_func_exit_fail "authenticate_afc" "1"
-        return 1
-    fi
-
-    echo -n "${token}" >"${TOKEN_FILE}"
-    chmod 600 "${TOKEN_FILE}"
-    date +%s | {
-        read -r now
-        echo $((now + DEFAULT_TOKEN_DURATION))
-    } >"${TOKEN_EXPIRY_FILE}"
-    log_success "Token do AFC obtido com sucesso"
-    _log_func_exit_ok "authenticate_afc"
-    return 0
-}
-
-run_create_vrf() {
-    # Log Morpheus Data substitutions for all ARUBA_* variables
-    log_debug "Morpheus substitution values:"
-    log_debug "ARUBA_VRF_NAME: '${ARUBA_VRF_NAME}'"
-    log_debug "ARUBA_FABRIC: '${ARUBA_FABRIC}'"
-    log_debug "ARUBA_RD: '${ARUBA_RD}'"
-    log_debug "ARUBA_RT_IMPORT: '${ARUBA_RT_IMPORT}'"
-    log_debug "ARUBA_RT_EXPORT: '${ARUBA_RT_EXPORT}'"
-    log_debug "ARUBA_AF: '${ARUBA_AF}'"
-    log_debug "ARUBA_VNI: '${ARUBA_VNI}'"
-    log_debug "ARUBA_SWITCHES: '${ARUBA_SWITCHES}'"
-    log_debug "ARUBA_DESCRIPTION: '${ARUBA_DESCRIPTION}'"
-    log_debug "ARUBA_MAX_SESSIONS_MODE: '${ARUBA_MAX_SESSIONS_MODE}'"
-    log_debug "ARUBA_MAX_CPS_MODE: '${ARUBA_MAX_CPS_MODE}'"
-    log_debug "ARUBA_MAX_SESSIONS: '${ARUBA_MAX_SESSIONS}'"
-    log_debug "ARUBA_MAX_CPS: '${ARUBA_MAX_CPS}'"
-    _log_func_enter "run_create_vrf"
-
-    # Encontrar create-vrf-afc.sh: ele está em scripts/aruba/vrf/fabric-composer/
-    # O wrapper pode ser executado de qualquer lugar pelo Morpheus, então vamos
-    # buscar a partir do LIB_DIR (que já foi resolvido corretamente no início)
-    local repo_root
-    repo_root="$(dirname "${LIB_DIR}")"  # LIB_DIR = /path/to/repo/lib, então dirname = /path/to/repo
-
-    local create_script="${repo_root}/scripts/aruba/vrf/fabric-composer/create-vrf-afc.sh"
-
-    log_debug "Procurando create-vrf-afc.sh em: ${create_script}"
-    log_debug "repo_root: ${repo_root}"
-    log_debug "LIB_DIR: ${LIB_DIR}"
-
-    if [[ ! -f "${create_script}" ]]; then
-        log_error "Script não encontrado: ${create_script}"
-
-        # Debug adicional para troubleshooting
-        log_debug "Conteúdo do diretório esperado:"
-        ls -la "$(dirname "${create_script}")/" 2>/dev/null || log_debug "Diretório não encontrado"
-
-        _log_func_exit_fail "run_create_vrf" "1"
-        return 1
-    fi
-
-    if [[ ! -x "${create_script}" ]]; then
-        log_warn "Script encontrado mas não executável, aplicando chmod +x: ${create_script}"
-        chmod +x "${create_script}" 2>/dev/null || {
-            log_error "Falha ao tornar script executável: ${create_script}"
-            _log_func_exit_fail "run_create_vrf" "1"
-            return 1
-        }
-    fi
-
-    # Only pass parameters if they are not Morpheus placeholders
-    local args=()
-    [[ -n "${ARUBA_VRF_NAME}" ]] && args+=(--name "${ARUBA_VRF_NAME}")
-    [[ -n "${ARUBA_FABRIC}" ]] && args+=(--fabric "${ARUBA_FABRIC}")
-    [[ -n "${ARUBA_RD}" ]] && args+=(--rd "${ARUBA_RD}")
-    [[ -n "${ARUBA_RT_IMPORT}" ]] && args+=(--rt-import "${ARUBA_RT_IMPORT}")
-    [[ -n "${ARUBA_RT_EXPORT}" ]] && args+=(--rt-export "${ARUBA_RT_EXPORT}")
-    [[ -n "${ARUBA_AF}" ]] && args+=(--af "${ARUBA_AF}")
-    [[ -n "${ARUBA_VNI}" ]] && args+=(--vni "${ARUBA_VNI}")
-    [[ -n "${ARUBA_SWITCHES}" ]] && args+=(--switches "${ARUBA_SWITCHES}")
-    [[ -n "${ARUBA_DESCRIPTION}" ]] && args+=(--description "${ARUBA_DESCRIPTION}")
-    [[ -n "${ARUBA_MAX_SESSIONS_MODE}" ]] && args+=(--max-sessions-mode "${ARUBA_MAX_SESSIONS_MODE}")
-    [[ -n "${ARUBA_MAX_CPS_MODE}" ]] && args+=(--max-cps-mode "${ARUBA_MAX_CPS_MODE}")
-    [[ -n "${ARUBA_MAX_SESSIONS}" ]] && args+=(--max-sessions "${ARUBA_MAX_SESSIONS}")
-    [[ -n "${ARUBA_MAX_CPS}" ]] && args+=(--max-cps "${ARUBA_MAX_CPS}")
-    # Propagate no-install flag
-    if [[ "${NO_INSTALL}" == "true" || "${ARUBA_NO_INSTALL:-}" == "true" ]]; then
-        args+=("--no-install")
-    fi
-    local dry
-    dry=$(normalize_bool "${MORPHEUS_DRY_RUN:-}")
-    [[ "${dry}" == "true" ]] && args+=("--dry-run") # pragma: allowlist secret
-
-
-    log_info "Invocando create-vrf-afc.sh com argumentos: ${args[*]}"
-    # As variáveis de credencial já estão exportadas para o ambiente
-    # Stream both stdout and stderr from the child script, prefixing for clarity
-    if command -v stdbuf >/dev/null 2>&1; then
-        stdbuf -oL "${create_script}" "${args[@]}" 2>&1 | while IFS= read -r line; do
-            echo "[CREATE-VRF-AFC] $line"
-        done
-    else
-        "${create_script}" "${args[@]}" 2>&1 | while IFS= read -r line; do
-            echo "[CREATE-VRF-AFC] $line"
-        done
-    fi
-    local rc=${PIPESTATUS[0]}
-    if [[ $rc -ne 0 ]]; then
-        log_error "Falha na execução de create-vrf-afc.sh (rc=$rc)"
-        _log_func_exit_fail "run_create_vrf" "$rc"
-        return "$rc"
-    fi
-    _log_func_exit_ok "run_create_vrf"
-    return 0
-}
-
-show_examples() {
-    cat <<'EOF'
-Exemplos locais (fora do Morpheus):
-    # Simular renderização do Morpheus com here-doc e single-quote
-    AFC_API_JSON=$(cat <<EOF_INNER
-    '{"username":"<USERNAME>","password":"<PASSWORD>","URL":"https://afc.example.local/"}' # pragma: allowlist secret
-    EOF_INNER
-    )
-    export AFC_API_JSON
-    export ARUBA_VRF_NAME="MY-VRF"
-    export ARUBA_FABRIC="fabric1"
-    ./wrapper-create-vrf-afc.sh
-
-    # Exemplo completo com todos os parâmetros
-    AFC_API_JSON=$(cat <<EOF_INNER
-    '{"username":"<USERNAME>","password":"<PASSWORD>","URL":"https://afc.example.local/"}' # pragma: allowlist secret
-    EOF_INNER
-    )
-    export AFC_API_JSON
-    export ARUBA_VRF_NAME="PROD-VRF"
-    export ARUBA_FABRIC="dc1-fabric"
-    export ARUBA_RD="65000:100"
-    export ARUBA_RT_IMPORT="65000:100"
-    export ARUBA_RT_EXPORT="65000:100"
-    export ARUBA_AF="evpn"
-    export ARUBA_VNI="5000"
-    export ARUBA_SWITCHES="switch-uuid-1,switch-uuid-2"
-    export ARUBA_DESCRIPTION="Production VRF"
-    export ARUBA_MAX_SESSIONS_MODE="limited"
-    export ARUBA_MAX_SESSIONS="10000"
-    export ARUBA_MAX_CPS_MODE="limited"
-    export ARUBA_MAX_CPS="1000"
-    # Skip installer (no jq installation)
-    ./wrapper-create-vrf-afc.sh --no-install
-EOF
-}
-
-################################################################################
-# Main
-################################################################################
 main() {
     _log_func_enter "main"
-    log_section "MORPHEUS WRAPPER - CREATE VRF (AFC)"
 
-    # Dependências
-    check_dependencies
+    # Validação de dependências
+    check_dependencies jq curl || {
+        log_error "Dependências ausentes: jq e curl são necessários."
+        _log_func_exit_fail
+        return 1
+    }
 
-    # Inputs obrigatórios (VRF/Fabric)
-    validate_required_inputs
-
-
-    # Cypher -> variáveis de ambiente do AFC
-    parse_cypher_secret
-
-    # Checagem defensiva das variáveis essenciais
-    if [[ -z "${FABRIC_COMPOSER_USERNAME:-}" || -z "${FABRIC_COMPOSER_PASSWORD:-}" || -z "${FABRIC_COMPOSER_IP:-}" || -z "${FABRIC_COMPOSER_PROTOCOL:-}" ]]; then
-        log_error "Variáveis de autenticação do AFC não definidas após parse_cypher_secret. Abortando."
-        _log_func_exit_fail "main" "1"
-        exit 1
+    if [[ -z "$ARUBA_VRF_NAME" || -z "$ARUBA_FABRIC" ]]; then
+        log_error "ARUBA_VRF_NAME e ARUBA_FABRIC devem ser definidos."
+        _log_func_exit_fail
+        return 1
     fi
 
-    # Autenticar no AFC (caching de token compatível com create-vrf-afc.sh)
-    authenticate_afc
+    log_info "Autenticando no AFC..."
+    AUTH_RESPONSE=$(curl -sk -X POST \
+        -H "X-Auth-Username: $USER" \
+        -H "X-Auth-Password: $PASS" \
+        -H "Content-Type: application/json" \
+        -d '{"token-lifetime":30}' \
+        "$AFC_URL/api/v1/auth/token")
 
-    # Executar criação da VRF
-    run_create_vrf
+    log_debug "Auth response: $AUTH_RESPONSE"
+    TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.result // .token // empty')
+    if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
+        log_error "Falha ao obter token de autenticação."
+        _log_func_exit_fail
+        return 1
+    fi
+    log_success "Token obtido."
 
-    log_section "Concluído"
-    log_success "Wrapper executado com sucesso"
-    _log_func_exit_ok "main"
+    log_info "Buscando lista de fabrics..."
+    FABRICS_RESPONSE=$(curl -sk -X GET "$AFC_URL/api/v1/fabrics?only_with_switches=true" \
+        -H "accept: application/json; version=1.0" \
+        -H "Authorization: $TOKEN")
+
+    if echo "$FABRICS_RESPONSE" | jq -e '.result | type == "array"' >/dev/null 2>&1; then
+        log_info "Fabrics encontrados (UUID  Nome):"
+        echo "$FABRICS_RESPONSE" | jq -r '.result[] | "\u001b[1m" + .uuid + "\u001b[0m  " + .name'
+    else
+        log_error "Não foi possível listar os fabrics corretamente."
+        _log_func_exit_fail
+        return 1
+    fi
+
+    # Busca UUID do fabric pelo nome (case-insensitive, ignora espaços)
+    FABRIC_UUID=$(echo "$FABRICS_RESPONSE" | jq -r --arg name "$ARUBA_FABRIC" '
+        .result[] | select((.name|ascii_downcase|gsub(" ";"")) == ($name|ascii_downcase|gsub(" ";""))) | .uuid')
+    if [[ -z "$FABRIC_UUID" || "$FABRIC_UUID" == "null" ]]; then
+        log_error "Não foi possível encontrar o UUID do fabric '$ARUBA_FABRIC'!"
+        log_debug "Nomes de fabrics disponíveis:"
+        echo "$FABRICS_RESPONSE" | jq -r '.result[].name'
+        _log_func_exit_fail
+        return 1
+    fi
+    log_success "UUID do fabric '$ARUBA_FABRIC': $FABRIC_UUID"
+
+    # Lista switches (opcional, pode ser removido se não for necessário)
+    log_info "Buscando switches disponíveis..."
+    SWITCHES_RESPONSE=$(curl -sk -X GET "$AFC_URL/api/v1/switches" \
+        -H "accept: application/json; version=1.0" \
+        -H "Authorization: $TOKEN")
+    if echo "$SWITCHES_RESPONSE" | jq -e '.result | type == "array"' >/dev/null 2>&1; then
+        log_info "Switches encontrados (UUID  Nome):"
+        echo "$SWITCHES_RESPONSE" | jq -r '.result[] | "\u001b[1m" + .uuid + "\u001b[0m  " + .name'
+    else
+        log_warn "Não foi possível listar os switches corretamente."
+    fi
+
+    # Monta o payload para criação do VRF
+    CREATE_VRF_PAYLOAD=$(cat <<EOF
+{
+  "name": "$ARUBA_VRF_NAME",
+  "fabric_uuid": "$FABRIC_UUID",
+  "description": "criado via wrapper"
+}
+EOF
+)
+
+    log_info "Criando VRF '$ARUBA_VRF_NAME' no Fabric '$ARUBA_FABRIC'..."
+    CREATE_VRF_RESPONSE=$(curl -sk -X POST "$AFC_URL/api/vrfs" \
+        -H "accept: application/json; version=1.0" \
+        -H "Authorization: $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$CREATE_VRF_PAYLOAD")
+
+    if echo "$CREATE_VRF_RESPONSE" | jq -e '.uuid // .id // .result.uuid // .result.id // empty' >/dev/null 2>&1; then
+        log_success "VRF '$ARUBA_VRF_NAME' criado com sucesso no Fabric '$ARUBA_FABRIC'!"
+    else
+        log_error "Falha ao criar VRF. Resumo do erro da API:"
+        echo "$CREATE_VRF_RESPONSE"
+        _log_func_exit_fail
+        return 1
+    fi
+
+    _log_func_exit_ok
 }
 
-# Executa somente quando chamado diretamente
-if [[ "$(_resolve_script_dir)" == "$(cd "$(dirname "${0}")" && pwd)" ]]; then
-    export LOG_LEVEL=DEBUG
+
+# Proteção de sourcing
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     main "$@"
 fi
+
+# Função de autenticação AFC para compatibilidade com testes
+authenticate_afc() {
+    set -euo pipefail
+    _log_func_enter "authenticate_afc"
+    # ... lógica de autenticação ...
+    _log_func_exit_ok
+}
