@@ -9,13 +9,22 @@ set -euo pipefail
 # Sourcing robusto do commons.sh (lib/commons.sh)
 # Sourcing robusto do commons.sh (lib/commons.sh)
 _SRC_PATH="${BASH_SOURCE[0]:-$0}"
-_SCRIPT_DIR="$(cd "$(dirname "$(realpath "$_SRC_PATH")")" && pwd)"
-COMMONS_PATH="$_SCRIPT_DIR/../../../../lib/commons.sh"
-if [[ -f "$COMMONS_PATH" ]]; then
+_SCRIPT_DIR="$(cd "$(dirname "$(realpath \"$_SRC_PATH\")")" && pwd)"
+# Busca ascendente até encontrar lib/commons.sh
+COMMONS_PATH=""
+_SEARCH_DIR="$_SCRIPT_DIR"
+while [[ "$_SEARCH_DIR" != "/" ]]; do
+    if [[ -f "$_SEARCH_DIR/lib/commons.sh" ]]; then
+        COMMONS_PATH="$_SEARCH_DIR/lib/commons.sh"
+        break
+    fi
+    _SEARCH_DIR="$(dirname "$_SEARCH_DIR")"
+done
+if [[ -n "$COMMONS_PATH" ]]; then
     # shellcheck disable=SC1090
     source "$COMMONS_PATH"
 else
-    echo "[FATAL] Não foi possível localizar lib/commons.sh em $COMMONS_PATH" >&2
+    echo "[FATAL] Não foi possível localizar lib/commons.sh em nenhum diretório ascendente a partir de $_SCRIPT_DIR" >&2
     exit 1
 fi
 
