@@ -2,7 +2,19 @@
 set -euo pipefail
 # Script: wrapper-create-vrf-afc.sh
 # Description: Cria um VRF no Aruba Fabric Composer, parametrizado por variáveis ARUBA_VRF_NAME e ARUBA_FABRIC.
-source "$(dirname "${BASH_SOURCE[0]}")/../../../commons.sh"
+# Sourcing seguro do commons.sh (lib/commons.sh)
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+COMMONS_PATH="$_SCRIPT_DIR/../../../../lib/commons.sh"
+if [[ -f "$COMMONS_PATH" ]]; then
+    # shellcheck disable=SC1090
+# shellcheck disable=SC1090
+# shellcheck disable=SC1090
+    source "$COMMONS_PATH"
+else
+    echo "[FATAL] Não foi possível localizar lib/commons.sh em $COMMONS_PATH" >&2
+    exit 1
+fi
+
 
 ARUBA_VRF_NAME="${ARUBA_VRF_NAME:-<%=customOptions.ARUBA_VRF_NAME%>}"
 ARUBA_FABRIC="${ARUBA_FABRIC:-<%=customOptions.ARUBA_FABRIC%>}"
