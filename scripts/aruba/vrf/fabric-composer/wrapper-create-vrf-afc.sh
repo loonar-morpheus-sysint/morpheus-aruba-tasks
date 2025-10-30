@@ -36,7 +36,7 @@ echo "ARUBA_FABRIC: $ARUBA_FABRIC"
 
 
 # Obtém dados sensíveis do cypher e extrai variáveis
-AFC_API_JSON="<%=cypher.read('secret/AFC_API')%>"
+AFC_API_JSON='<%=cypher.read('secret/AFC_API')%>'
 echo "$AFC_API_JSON"
 
 # Facilita testes locais: se AFC_API_JSON não for um JSON válido, usa exemplo
