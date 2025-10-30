@@ -1303,8 +1303,16 @@ main() {
   fi
 
   # Validate environment
+
   if ! validate_environment; then
     log_error "Environment validation failed"
+    _log_func_exit_fail "main" "1"
+    exit 1
+  fi
+
+  # Checagem defensiva das variáveis essenciais de autenticação
+  if [[ -z "${FABRIC_COMPOSER_USERNAME:-}" || -z "${FABRIC_COMPOSER_PASSWORD:-}" || -z "${FABRIC_COMPOSER_IP:-}" || -z "${FABRIC_COMPOSER_PROTOCOL:-}" ]]; then
+    log_error "[ERRO] Variáveis de autenticação do AFC não definidas. Abortando."
     _log_func_exit_fail "main" "1"
     exit 1
   fi

@@ -665,8 +665,16 @@ main() {
     # Inputs obrigatórios (VRF/Fabric)
     validate_required_inputs
 
+
     # Cypher -> variáveis de ambiente do AFC
     parse_cypher_secret
+
+    # Checagem defensiva das variáveis essenciais
+    if [[ -z "${FABRIC_COMPOSER_USERNAME:-}" || -z "${FABRIC_COMPOSER_PASSWORD:-}" || -z "${FABRIC_COMPOSER_IP:-}" || -z "${FABRIC_COMPOSER_PROTOCOL:-}" ]]; then
+        log_error "Variáveis de autenticação do AFC não definidas após parse_cypher_secret. Abortando."
+        _log_func_exit_fail "main" "1"
+        exit 1
+    fi
 
     # Autenticar no AFC (caching de token compatível com create-vrf-afc.sh)
     authenticate_afc
