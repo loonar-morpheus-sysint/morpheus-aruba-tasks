@@ -2,12 +2,7 @@
 set -euo pipefail
 # Script: wrapper-create-vrf-afc.sh
 # Description: Cria um VRF no Aruba Fabric Composer, parametrizado por variáveis ARUBA_VRF_NAME e ARUBA_FABRIC.
-# Sourcing seguro do commons.sh (lib/commons.sh)
 
-# Sourcing robusto do commons.sh (lib/commons.sh)
-
-# Sourcing robusto do commons.sh (lib/commons.sh)
-# Sourcing robusto do commons.sh (lib/commons.sh)
 _SRC_PATH="${BASH_SOURCE[0]:-$0}"
 _SCRIPT_DIR="$(cd "$(dirname "$(realpath \"$_SRC_PATH\")")" && pwd)"
 # Busca ascendente até encontrar lib/commons.sh
@@ -35,11 +30,17 @@ echo "ARUBA_VRF_NAME: $ARUBA_VRF_NAME"
 echo "ARUBA_FABRIC: $ARUBA_FABRIC"
 
 
-# Obtém dados sensíveis do cypher e extrai variáveis
-AFC_API_JSON='<%=cypher.read('secret/AFC_API')%>'
-echo "$AFC_API_JSON"
 
-AFC_URL="$(extract_json "$AFC_API_JSON" URL | sed 's:/*$::')"
+# Obtém dados sensíveis do cypher e extrai variáveis
+AFC_API_JSON=$(cat <<EOF
+'<%=cypher.read('secret/AFC_API')%>'
+EOF
+)
+
+
+echo "$AFC_API_JSON"
+# Limpa e valida JSON
+AFC_URL="$(extract_json "$AFC_API_JSON" "URL")"
 USER="$(extract_json "$AFC_API_JSON" username)"
 PASS="$(extract_json "$AFC_API_JSON" password)"
 
