@@ -208,65 +208,6 @@ __AFC_CYPHER__
     )
 fi
 
-# --- Procedural AFC VRF creation (igual ao test-afc-get-fabrics.sh) ---
-
-# 1. Autenticação AFC
-echo "[INFO] Autenticando..."
-AUTH_RESPONSE=$(curl -sk -X POST \
-    -H "X-Auth-Username: ${FABRIC_COMPOSER_USERNAME}" \
-    -H "X-Auth-Password: ${FABRIC_COMPOSER_PASSWORD}" \
-    -H "Content-Type: application/json" \
-    -d '{"token-lifetime":30}' \
-    "${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/v1/auth/token")
-TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.result // .token // empty')
-if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
-    echo "[ERRO] Falha ao obter token"
-    exit 1
-fi
-echo "[INFO] Token obtido: $TOKEN"
-
-# 2. Buscar fabrics
-FABRICS_RESPONSE=$(curl -sk -X GET "${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/v1/fabrics?only_with_switches=true" \
-    -H "accept: application/json; version=1.0" \
-    -H "Authorization: $TOKEN")
-FABRIC_UUID=$(echo "$FABRICS_RESPONSE" | jq -r --arg name "$ARUBA_FABRIC" '.result[] | select((.name|ascii_downcase|gsub(" ";"")) == ($name|ascii_downcase|gsub(" ";""))) | .uuid')
-if [[ -z "$FABRIC_UUID" || "$FABRIC_UUID" == "null" ]]; then
-    echo "[ERRO] Não foi possível encontrar o UUID do fabric '$ARUBA_FABRIC'!"
-    exit 1
-fi
-echo "[INFO] UUID do fabric '$ARUBA_FABRIC': $FABRIC_UUID"
-
-# 3. Buscar switches
-SWITCHES_RESPONSE=$(curl -sk -X GET "${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/v1/switches" \
-    -H "accept: application/json; version=1.0" \
-    -H "Authorization: $TOKEN")
-SWITCH_UUID=$(echo "$SWITCHES_RESPONSE" | jq -r --arg name "$ARUBA_SWITCHES" '.result[] | select(.name==$name) | .uuid')
-if [[ -z "$SWITCH_UUID" || "$SWITCH_UUID" == "null" ]]; then
-    echo "[ERRO] Não foi possível encontrar o UUID do switch '$ARUBA_SWITCHES'!"
-    exit 1
-fi
-echo "[INFO] UUID do switch '$ARUBA_SWITCHES': $SWITCH_UUID"
-
-# 4. Montar payload e criar VRF
-CREATE_VRF_PAYLOAD=$(cat <<EOF
-{
-  "name": "$ARUBA_VRF_NAME",
-  "fabric_uuid": "$FABRIC_UUID",
-  "description": "${ARUBA_DESCRIPTION:-teste loonar}"
-}
-EOF
-)
-CREATE_VRF_RESPONSE=$(curl -sk -X POST "${FABRIC_COMPOSER_PROTOCOL}://${FABRIC_COMPOSER_IP}:${FABRIC_COMPOSER_PORT}/api/vrfs" \
-    -H "accept: application/json; version=1.0" \
-    -H "Authorization: $TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$CREATE_VRF_PAYLOAD")
-if echo "$CREATE_VRF_RESPONSE" | jq -e '.uuid // .id // .result.uuid // .result.id // empty' >/dev/null 2>&1; then
-    echo "VRF '$ARUBA_VRF_NAME' criado com sucesso no Fabric '$ARUBA_FABRIC'!"
-else
-    echo "[ERRO] Falha ao criar VRF. Resumo do erro da API:"
-    echo "$CREATE_VRF_RESPONSE"
-fi
 ################################################################################
 # Constantes e arquivos de token (compartilhados com create-vrf-afc.sh)
 ################################################################################
