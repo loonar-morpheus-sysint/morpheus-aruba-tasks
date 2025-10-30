@@ -29,8 +29,8 @@ else
 fi
 
 
-ARUBA_VRF_NAME="${ARUBA_VRF_NAME:-<%=customOptions.ARUBA_VRF_NAME%>}"
-ARUBA_FABRIC="${ARUBA_FABRIC:-<%=customOptions.ARUBA_FABRIC%>}"
+ARUBA_VRF_NAME="<%=customOptions.ARUBA_VRF_NAME%>"
+ARUBA_FABRIC="<%=customOptions.ARUBA_FABRIC%>"
 echo "ARUBA_VRF_NAME: $ARUBA_VRF_NAME"
 echo "ARUBA_FABRIC: $ARUBA_FABRIC"
 
