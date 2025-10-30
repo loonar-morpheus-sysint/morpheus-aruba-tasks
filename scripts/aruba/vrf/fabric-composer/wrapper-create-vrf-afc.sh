@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 # Script: wrapper-create-vrf-afc.sh
 # Description: Cria um VRF no Aruba Fabric Composer, parametrizado por variáveis ARUBA_VRF_NAME e ARUBA_FABRIC.
 
@@ -32,8 +32,11 @@ fi
 
 
 
-_SRC_PATH="${BASH_SOURCE[0]:-$0}" || _SRC_PATH="$0"
-_SCRIPT_DIR="$(cd "$(dirname "$(realpath \"$_SRC_PATH\")")" && pwd)"
+_SRC_PATH="$0"
+if [ -n "${BASH_SOURCE[0]+set}" ]; then
+    _SRC_PATH="${BASH_SOURCE[0]}"
+fi
+_SCRIPT_DIR="$(cd "$(dirname "$(realpath \""$_SRC_PATH"\")")" && pwd)"
 # Busca ascendente até encontrar lib/commons.sh
 COMMONS_PATH=""
 _SEARCH_DIR="$_SCRIPT_DIR"
