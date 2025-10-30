@@ -37,6 +37,10 @@ AFC_API_JSON=$(cat <<EOF
 EOF
 )
 
+# Remove aspas simples ao redor do JSON, se existirem
+if [[ "$AFC_API_JSON" =~ ^'.*'$ ]]; then
+    AFC_API_JSON="${AFC_API_JSON:1:-1}"
+fi
 
 echo "$AFC_API_JSON"
 # Limpa e valida JSON
